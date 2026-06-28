@@ -1,0 +1,36 @@
+# Binaries
+streamvault
+streamvault.exe
+*.exe
+
+# Build output
+dist/
+build/
+bin/
+
+# Go
+vendor/
+*.test
+
+# Node / Frontend
+node_modules/
+.env
+.env.local
+*.log
+
+# Database
+*.db
+*.sqlite
+
+# Config (may contain secrets)
+config.yaml
+config.toml
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+*.swp
