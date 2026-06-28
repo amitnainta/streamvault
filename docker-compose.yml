@@ -1,0 +1,40 @@
+services:
+  streamvault:
+    image: streamvault/server:latest
+    # To build locally instead: uncomment below and comment out 'image'
+    # build: .
+    container_name: streamvault
+    ports:
+      - "8096:8096"
+    volumes:
+      - ./config:/config          # DB, artwork cache, transcode temp, logs
+      - /path/to/movies:/media/movies:ro
+      - /path/to/music:/media/music:ro
+    environment:
+      - SV_DATABASE_TYPE=sqlite
+      # Uncomment for PostgreSQL:
+      # - SV_DATABASE_TYPE=postgres
+      # - SV_DATABASE_URL=postgres://streamvault:changeme@db:5432/streamvault
+    # Uncomment for NVIDIA hardware transcoding:
+    # runtime: nvidia
+    # environment:
+    #   - NVIDIA_VISIBLE_DEVICES=all
+    # Uncomment for Intel QSV / VA-API:
+    # devices:
+    #   - /dev/dri:/dev/dri
+    restart: unless-stopped
+
+  # ── Optional: PostgreSQL for large libraries ─────────────────────────────
+  # db:
+  #   image: postgres:16-alpine
+  #   container_name: streamvault-db
+  #   environment:
+  #     POSTGRES_DB: streamvault
+  #     POSTGRES_USER: streamvault
+  #     POSTGRES_PASSWORD: changeme
+  #   volumes:
+  #     - pgdata:/var/lib/postgresql/data
+  #   restart: unless-stopped
+  #
+  # volumes:
+  #   pgdata:

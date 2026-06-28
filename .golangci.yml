@@ -1,0 +1,32 @@
+run:
+  timeout: 5m
+
+linters:
+  enable:
+    - forbidigo
+    - govet
+    - staticcheck
+    - errcheck
+    - gosimple
+    - unused
+
+linters-settings:
+  forbidigo:
+    # Enforce that all outbound HTTP goes through privacy.OutboundClient
+    forbid:
+      - pattern: 'http\.DefaultClient'
+        msg: "Use privacy.OutboundClient — direct http.DefaultClient usage bypasses the Privacy Gate"
+      - pattern: '&http\.Client\{'
+        msg: "Use privacy.OutboundClient — creating http.Client directly bypasses the Privacy Gate"
+      - pattern: 'http\.Get\('
+        msg: "Use privacy.OutboundClient — http.Get bypasses the Privacy Gate"
+      - pattern: 'http\.Post\('
+        msg: "Use privacy.OutboundClient — http.Post bypasses the Privacy Gate"
+      - pattern: 'http\.Do\('
+        msg: "Use privacy.OutboundClient — http.Do bypasses the Privacy Gate"
+
+issues:
+  exclude-rules:
+    # Allow http.Client inside the privacy package itself (it's the gate)
+    - path: internal/privacy/
+      linters: [forbidigo]
