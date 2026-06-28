@@ -20,7 +20,7 @@ StreamVault is an open-source home media server built from scratch with a modern
 ## Documentation
 
 - [Product Requirements Document](docs/PRD.md)
-- [Architecture Design](docs/ARCHITECTURE.md) *(coming soon)*
+- [Architecture Design](docs/ARCHITECTURE.md)
 - [API Design](docs/API.md) *(coming soon)*
 - [Contributing](CONTRIBUTING.md) *(coming soon)*
 
