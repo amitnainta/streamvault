@@ -44,8 +44,8 @@ func NewEngine(dataDir string, logger *zap.Logger) *Engine {
 	return e
 }
 
-// StartSession creates a new HLS transcode session and returns its ID.
-func (e *Engine) StartSession(userID, itemID, filePath string, opts Options) (*Session, error) {
+// StartSessionFull creates a new HLS transcode session and returns its ID.
+func (e *Engine) StartSessionFull(userID, itemID, filePath string, opts Options) (*Session, error) {
 	sessionID := uuid.New().String()
 	outDir := filepath.Join(e.dataDir, "transcode", sessionID)
 	if err := os.MkdirAll(outDir, 0o755); err != nil {
@@ -143,6 +143,48 @@ func (e *Engine) cleanupLoop() {
 		}
 		e.mu.Unlock()
 	}
+}
+
+// StartSessionSimple starts a session with default options (software transcode to H.264/AAC HLS).
+// Used by the stream handler when no client capability negotiation has occurred.
+func (e *Engine) StartSession(itemID, filePath string) (string, error) {
+	sess, err := e.StartSessionFull("", itemID, filePath, Options{
+		VideoCodec:   VideoEncoder(e.hwAccel, "h264"),
+		AudioCodec:   "aac",
+		VideoBitrate: "4000k",
+		AudioBitrate: "192k",
+	})
+	if err != nil {
+		return "", err
+	}
+	return sess.ID, nil
+}
+
+// ManifestPath returns the path to the HLS manifest for a session.
+func (e *Engine) ManifestPath(sessionID string) (string, error) {
+	e.mu.Lock()
+	sess, ok := e.sessions[sessionID]
+	e.mu.Unlock()
+	if !ok {
+		return "", fmt.Errorf("session not found")
+	}
+	return filepath.Join(sess.OutputDir, "index.m3u8"), nil
+}
+
+// SegmentPath returns the path to a named HLS segment file.
+func (e *Engine) SegmentPath(sessionID, segment string) (string, error) {
+	e.mu.Lock()
+	sess, ok := e.sessions[sessionID]
+	e.mu.Unlock()
+	if !ok {
+		return "", fmt.Errorf("session not found")
+	}
+	return filepath.Join(sess.OutputDir, segment), nil
+}
+
+// StopSession is an alias for KillSession used by the HTTP handler.
+func (e *Engine) StopSession(sessionID string) {
+	e.KillSession(sessionID)
 }
 
 // Options controls what FFmpeg produces.

@@ -2,18 +2,20 @@ package api
 
 import (
 	"database/sql"
+	"io/fs"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
-	"github.com/go-chi/chi/v5/middleware"
+	chimw "github.com/go-chi/chi/v5/middleware"
 	"go.uber.org/zap"
 
-	"github.com/amitnainta/streamvault/internal/config"
-	apimw "github.com/amitnainta/streamvault/internal/api/middleware"
 	"github.com/amitnainta/streamvault/internal/api/handlers"
+	apimw "github.com/amitnainta/streamvault/internal/api/middleware"
+	"github.com/amitnainta/streamvault/internal/config"
 	"github.com/amitnainta/streamvault/internal/privacy"
 	"github.com/amitnainta/streamvault/internal/scheduler"
 	"github.com/amitnainta/streamvault/internal/transcode"
+	"github.com/amitnainta/streamvault/internal/ws"
 )
 
 // Deps are all dependencies wired in main.go and injected here.
@@ -24,6 +26,8 @@ type Deps struct {
 	Outbound   *privacy.OutboundClient
 	Transcoder *transcode.Engine
 	Scheduler  *scheduler.Scheduler
+	Hub        *ws.Hub
+	WebFS      fs.FS // embedded web/dist
 	Logger     *zap.Logger
 }
 
@@ -31,8 +35,8 @@ func NewRouter(d Deps) http.Handler {
 	r := chi.NewRouter()
 
 	// ── Global middleware ──────────────────────────────────────────────────
-	r.Use(middleware.RealIP)
-	r.Use(middleware.RequestID)
+	r.Use(chimw.RealIP)
+	r.Use(chimw.RequestID)
 	r.Use(apimw.Logger(d.Logger))
 	r.Use(apimw.Recover(d.Logger))
 	r.Use(apimw.SecurityHeaders())
@@ -45,7 +49,6 @@ func NewRouter(d Deps) http.Handler {
 
 	// ── API v1 ────────────────────────────────────────────────────────────
 	r.Route("/api/v1", func(r chi.Router) {
-		// Public: auth
 		authH := handlers.NewAuthHandler(d.DB, d.Logger)
 		r.Post("/auth/login", authH.Login)
 		r.Post("/auth/refresh", authH.Refresh)
@@ -58,12 +61,12 @@ func NewRouter(d Deps) http.Handler {
 			r.Get("/auth/me", authH.Me)
 
 			// Libraries
-			libraryH := handlers.NewLibraryHandler(d.DB, d.Logger)
-			r.Get("/libraries", libraryH.List)
-			r.Post("/libraries", libraryH.Create)
-			r.Get("/libraries/{id}", libraryH.Get)
-			r.Delete("/libraries/{id}", libraryH.Delete)
-			r.Post("/libraries/{id}/scan", libraryH.Scan)
+			libH := handlers.NewLibraryHandler(d.DB, d.Logger)
+			r.Get("/libraries", libH.List)
+			r.Post("/libraries", libH.Create)
+			r.Get("/libraries/{id}", libH.Get)
+			r.Delete("/libraries/{id}", libH.Delete)
+			r.Post("/libraries/{id}/scan", libH.Scan)
 
 			// Media items
 			itemH := handlers.NewItemHandler(d.DB, d.Logger)
@@ -72,63 +75,59 @@ func NewRouter(d Deps) http.Handler {
 			r.Patch("/items/{id}", itemH.Update)
 			r.Post("/items/{id}/artwork", itemH.UploadArtwork)
 
-			// Playback
+			// Playback session start
 			streamH := handlers.NewStreamHandler(d.DB, d.Transcoder, d.Logger)
-			r.Get("/items/{id}/playback", streamH.Negotiate)
+			r.Get("/items/{id}/playback", streamH.StartSession)
+			r.Delete("/stream/sessions/{sessionId}", streamH.StopSession)
 
-			// TV Shows
-			showH := handlers.NewShowHandler(d.DB, d.Logger)
-			r.Get("/shows/{id}/seasons", showH.ListSeasons)
-			r.Get("/shows/{id}/seasons/{season}/episodes", showH.ListEpisodes)
+			// Progress
+			progH := handlers.NewProgressHandler(d.DB, d.Logger)
+			r.Get("/progress/continue-watching", progH.ListContinueWatching)
+			r.Get("/progress/{id}", progH.GetProgress)
+			r.Put("/progress/{id}", progH.ReportProgress)
 
-			// Users (admin) + self-service progress
+			// Users (admin)
 			userH := handlers.NewUserHandler(d.DB, d.Logger)
-			r.Get("/users", userH.List)           // admin only
-			r.Post("/users", userH.Create)         // admin only
-			r.Get("/users/{id}", userH.Get)
+			r.Get("/users", userH.List)
+			r.Post("/users", userH.Create)
 			r.Patch("/users/{id}", userH.Update)
-			r.Delete("/users/{id}", userH.Delete)  // admin only
-			r.Get("/users/{id}/progress", userH.GetProgress)
-			r.Put("/users/{id}/progress/{itemId}", userH.UpdateProgress)
-			r.Get("/users/{id}/history", userH.GetHistory)
-			r.Get("/users/{id}/watchlist", userH.GetWatchlist)
-			r.Post("/users/{id}/watchlist/{itemId}", userH.AddToWatchlist)
-			r.Delete("/users/{id}/watchlist/{itemId}", userH.RemoveFromWatchlist)
+			r.Delete("/users/{id}", userH.Delete)
 
 			// Tasks (admin)
 			taskH := handlers.NewTaskHandler(d.Scheduler, d.Logger)
 			r.Get("/tasks", taskH.List)
-			r.Post("/tasks/{id}/run", taskH.Run)
-			r.Get("/tasks/{id}/status", taskH.Status)
+			r.Get("/tasks/{id}", taskH.Get)
+			r.Post("/tasks/{id}/run", taskH.RunNow)
 
-			// Server stats (admin)
-			serverH := handlers.NewServerHandler(d.Logger)
-			r.Get("/server/info", serverH.Info)
-			r.Get("/server/stats", serverH.Stats)
+			// Server stats
+			srvH := handlers.NewServerHandler(d.DB, d.Logger)
+			r.Get("/server/info", srvH.Info)
 
 			// Privacy settings (admin)
-			privacyH := handlers.NewPrivacyHandler(d.Privacy, d.Logger)
-			r.Get("/settings/privacy", privacyH.Get)
-			r.Patch("/settings/privacy", privacyH.Update)
-			r.Get("/settings/privacy/activity", privacyH.ActivityLog)
-			r.Delete("/settings/privacy/activity", privacyH.ClearActivityLog)
+			privH := handlers.NewPrivacyHandler(d.DB, d.Privacy, d.Logger)
+			r.Get("/settings/privacy", privH.GetSettings)
+			r.Patch("/settings/privacy", privH.UpdateSettings)
+			r.Get("/settings/privacy/activity", privH.GetActivityLog)
 		})
 	})
 
-	// ── Streaming (authenticated via token query param) ───────────────────
+	// ── Streaming (auth via ?token= query param) ──────────────────────────
 	streamH := handlers.NewStreamHandler(d.DB, d.Transcoder, d.Logger)
-	r.Get("/stream/{sessionId}/index.m3u8", streamH.HLSManifest)
-	r.Get("/stream/{sessionId}/{segment}", streamH.HLSSegment)
-	r.Get("/direct/{itemId}", streamH.DirectPlay)
+	r.With(apimw.Auth(d.DB)).Get("/stream/hls/{sessionId}/index.m3u8", streamH.HLSManifest)
+	r.With(apimw.Auth(d.DB)).Get("/stream/hls/{sessionId}/{segment}", streamH.HLSSegment)
+	r.With(apimw.Auth(d.DB)).Get("/direct/{id}", streamH.DirectPlay)
 
-	// ── Artwork (local, no external) ──────────────────────────────────────
-	r.Get("/artwork/{itemId}/{artType}", handlers.ServeArtwork(d.Config.Storage.DataDir))
+	// ── Artwork ────────────────────────────────────────────────────────────
+	artH := handlers.NewStreamHandler(d.DB, d.Transcoder, d.Logger)
+	r.Get("/artwork/{id}/{type}", artH.ArtworkServe)
 
-	// ── WebSocket ─────────────────────────────────────────────────────────
-	r.Get("/ws", handlers.WebSocket(d.DB, d.Logger))
+	// ── WebSocket ──────────────────────────────────────────────────────────
+	r.With(apimw.Auth(d.DB)).Get("/ws", d.Hub.ServeWS)
 
-	// ── Frontend SPA (embedded static assets) ────────────────────────────
-	r.Handle("/*", handlers.StaticFiles())
+	// ── Frontend SPA (embedded static assets) ─────────────────────────────
+	if d.WebFS != nil {
+		r.Handle("/*", handlers.SPAHandler(d.WebFS))
+	}
 
 	return r
 }

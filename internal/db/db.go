@@ -10,7 +10,7 @@ import (
 	"github.com/golang-migrate/migrate/v4/database/sqlite3"
 	"github.com/golang-migrate/migrate/v4/source/iofs"
 	_ "github.com/lib/pq"
-	_ "github.com/mattn/go-sqlite3"
+	_ "modernc.org/sqlite"
 
 	"github.com/amitnainta/streamvault/internal/config"
 )
@@ -22,11 +22,11 @@ var migrationsFS embed.FS
 func Open(cfg config.DatabaseConfig) (*sql.DB, error) {
 	switch cfg.Type {
 	case "sqlite":
-		db, err := sql.Open("sqlite3", cfg.URL+"?_journal_mode=WAL&_foreign_keys=on")
+		// modernc/sqlite driver name is "sqlite" (not "sqlite3")
+		db, err := sql.Open("sqlite", cfg.URL+"?_pragma=journal_mode(WAL)&_pragma=foreign_keys(on)")
 		if err != nil {
 			return nil, fmt.Errorf("open sqlite: %w", err)
 		}
-		// SQLite: single writer, multiple readers
 		db.SetMaxOpenConns(1)
 		return db, nil
 
@@ -59,16 +59,20 @@ func Migrate(db *sql.DB, dbType string) error {
 			return fmt.Errorf("sqlite migrate driver: %w", err)
 		}
 		m, err = migrate.NewWithInstance("iofs", src, "sqlite3", driver)
+		if err != nil {
+			return fmt.Errorf("create migrator: %w", err)
+		}
 	case "postgres":
 		driver, err := postgres.WithInstance(db, &postgres.Config{})
 		if err != nil {
 			return fmt.Errorf("postgres migrate driver: %w", err)
 		}
 		m, err = migrate.NewWithInstance("iofs", src, "postgres", driver)
-	}
-
-	if err != nil {
-		return fmt.Errorf("create migrator: %w", err)
+		if err != nil {
+			return fmt.Errorf("create migrator: %w", err)
+		}
+	default:
+		return fmt.Errorf("unknown db type: %s", dbType)
 	}
 
 	if err := m.Up(); err != nil && err != migrate.ErrNoChange {

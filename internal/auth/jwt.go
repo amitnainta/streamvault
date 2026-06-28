@@ -1,6 +1,9 @@
 package auth
 
 import (
+	"crypto/rand"
+	"database/sql"
+	"encoding/hex"
 	"fmt"
 	"time"
 
@@ -31,6 +34,29 @@ type JWTService struct {
 
 func NewJWTService(secret []byte) *JWTService {
 	return &JWTService{secret: secret}
+}
+
+// NewJWTServiceFromDB loads (or auto-generates) the JWT secret from the settings table.
+func NewJWTServiceFromDB(db *sql.DB) *JWTService {
+	var secretHex string
+	err := db.QueryRow(`SELECT value FROM settings WHERE key='jwt_secret'`).Scan(&secretHex)
+	if err == nil && len(secretHex) >= 32 {
+		secret, decErr := hex.DecodeString(secretHex)
+		if decErr == nil {
+			return &JWTService{secret: secret}
+		}
+	}
+
+	// Auto-generate a 256-bit secret and persist it
+	buf := make([]byte, 32)
+	rand.Read(buf)
+	secretHex = hex.EncodeToString(buf)
+	db.Exec(
+		`INSERT INTO settings(key, value, updated_at) VALUES('jwt_secret',?,CURRENT_TIMESTAMP)
+		 ON CONFLICT(key) DO UPDATE SET value=excluded.value`,
+		secretHex,
+	)
+	return &JWTService{secret: buf}
 }
 
 func (s *JWTService) Issue(userID, role string, libraryIDs []string) (TokenPair, error) {
