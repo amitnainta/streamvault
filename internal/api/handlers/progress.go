@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/go-chi/chi/v5"
-	"github.com/google/uuid"
 	"go.uber.org/zap"
 
 	"github.com/amitnainta/streamvault/internal/api/middleware"
@@ -52,16 +51,15 @@ func (h *ProgressHandler) ReportProgress(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	id := uuid.New().String()
 	h.db.ExecContext(r.Context(),
-		`INSERT INTO playback_progress(id, user_id, item_id, position_ms, duration_ms, completed, updated_at)
-		 VALUES(?,?,?,?,?,?,?)
+		`INSERT INTO playback_progress(user_id, item_id, position_ms, duration_ms, completed, updated_at)
+		 VALUES(?,?,?,?,?,?)
 		 ON CONFLICT(user_id, item_id) DO UPDATE SET
 		   position_ms=excluded.position_ms,
 		   duration_ms=excluded.duration_ms,
 		   completed=excluded.completed,
 		   updated_at=excluded.updated_at`,
-		id, claims.UserID, itemID, req.PositionMs, req.DurationMs, req.Completed, time.Now(),
+		claims.UserID, itemID, req.PositionMs, req.DurationMs, req.Completed, time.Now(),
 	)
 	w.WriteHeader(204)
 }
