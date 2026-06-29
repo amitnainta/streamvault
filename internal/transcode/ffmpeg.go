@@ -69,8 +69,8 @@ func (f *FFmpegRunner) buildArgs(job TranscodeJob) []string {
 		"-i", job.InputPath,
 	}
 
-	// Video codec
-	videoEnc := VideoEncoder(job.HWAccel, job.VideoCodec)
+	// VideoCodec is already the resolved encoder name (e.g. "h264_nvenc", "libx264")
+	videoEnc := job.VideoCodec
 	args = append(args, "-c:v", videoEnc)
 	if job.VideoBitrate != "" && videoEnc != "copy" {
 		args = append(args, "-b:v", job.VideoBitrate)
