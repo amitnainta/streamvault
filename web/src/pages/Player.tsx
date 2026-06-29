@@ -102,15 +102,21 @@ export default function PlayerPage() {
   }, [playing])
 
   const changeQuality = (q: Quality) => {
-    // Save current position so new stream resumes from same point
     savedTimeRef.current = videoRef.current?.currentTime ?? 0
     setShowQuality(false)
-    setQuality(q)
-    // Stop current HLS session before refetch starts a new one
+    // Stop old HLS session
     if (playback?.type === 'hls' && playback.session_id) {
       api.delete(`/stream/sessions/${playback.session_id}`).catch(() => {})
     }
-    refetchPlayback()
+    // Tear down video before switching
+    stopHls()
+    if (videoRef.current) {
+      videoRef.current.pause()
+      videoRef.current.removeAttribute('src')
+      videoRef.current.load()
+    }
+    // setQuality triggers queryKey change → auto-refetch (don't call refetchPlayback too)
+    setQuality(q)
   }
 
   const togglePlay = () => {
