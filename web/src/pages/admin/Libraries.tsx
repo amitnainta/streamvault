@@ -68,10 +68,10 @@ export default function AdminLibraries() {
               <button
                 onClick={() => scanMutation.mutate(lib.id)}
                 disabled={scanning === lib.id}
-                className="text-muted-foreground hover:text-foreground p-1.5 rounded hover:bg-muted transition-colors disabled:opacity-50"
-                title="Scan library"
+                className="flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-lg bg-muted hover:bg-accent hover:text-white transition-colors disabled:opacity-50"
               >
-                <Scan size={15} className={scanning === lib.id ? 'animate-spin' : ''} />
+                <Scan size={13} className={scanning === lib.id ? 'animate-spin' : ''} />
+                {scanning === lib.id ? 'Scanning…' : 'Scan'}
               </button>
               <button
                 onClick={() => deleteMutation.mutate(lib.id)}
