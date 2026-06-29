@@ -26,40 +26,85 @@ func NewItemHandler(db *sql.DB, log *zap.Logger) *ItemHandler {
 func (h *ItemHandler) List(w http.ResponseWriter, r *http.Request) {
 	q := r.URL.Query()
 	libraryID := q.Get("library")
-	search := q.Get("search")
+	search := strings.TrimSpace(q.Get("search"))
+	mediaType := q.Get("type")
 	limit := 100
 	if l, err := strconv.Atoi(q.Get("limit")); err == nil && l > 0 && l <= 500 {
 		limit = l
 	}
 
-	var args []any
-	var where []string
-
-	if libraryID != "" {
-		where = append(where, "m.library_id=?")
-		args = append(args, libraryID)
+	orderBy := "m.added_at DESC"
+	switch q.Get("sort") {
+	case "title_asc":
+		orderBy = "mt.title ASC"
+	case "title_desc":
+		orderBy = "mt.title DESC"
+	case "year_desc":
+		orderBy = "mt.year DESC, m.added_at DESC"
+	case "year_asc":
+		orderBy = "mt.year ASC, m.added_at DESC"
 	}
-	if search != "" {
-		where = append(where, "(mt.title LIKE ? OR mt.original_title LIKE ?)")
-		args = append(args, "%"+search+"%", "%"+search+"%")
-	}
 
-	clause := ""
-	if len(where) > 0 {
-		clause = "WHERE " + strings.Join(where, " AND ")
-	}
-	args = append(args, limit)
-
-	rows, err := h.db.QueryContext(r.Context(), `
+	const selectCols = `
 		SELECT m.id, m.library_id, m.type, m.file_path, m.file_size, m.duration_ms,
 		       m.video_codec, m.video_width, m.video_height, m.audio_codec, m.container, m.added_at,
 		       mt.title, mt.year, mt.description, mt.genres, mt.rating, mt.content_rating, mt.metadata_source
 		FROM media_items m
-		LEFT JOIN metadata mt ON mt.id = m.id
-		`+clause+`
-		ORDER BY m.added_at DESC
-		LIMIT ?`, args...)
+		LEFT JOIN metadata mt ON mt.id = m.id`
+
+	var rows *sql.Rows
+	var err error
+
+	if search != "" {
+		// Use FTS5 full-text search
+		fts := fts5Query(search)
+		var where []string
+		var args []any
+		args = append(args, fts)
+		if libraryID != "" {
+			where = append(where, "m.library_id=?")
+			args = append(args, libraryID)
+		}
+		if mediaType != "" {
+			where = append(where, "m.type=?")
+			args = append(args, mediaType)
+		}
+		clause := ""
+		if len(where) > 0 {
+			clause = "AND " + strings.Join(where, " AND ")
+		}
+		args = append(args, limit)
+		rows, err = h.db.QueryContext(r.Context(),
+			selectCols+`
+			JOIN search_index si ON si.item_id = m.id
+			WHERE si MATCH ? `+clause+`
+			ORDER BY `+orderBy+`
+			LIMIT ?`, args...)
+	} else {
+		var where []string
+		var args []any
+		if libraryID != "" {
+			where = append(where, "m.library_id=?")
+			args = append(args, libraryID)
+		}
+		if mediaType != "" {
+			where = append(where, "m.type=?")
+			args = append(args, mediaType)
+		}
+		clause := ""
+		if len(where) > 0 {
+			clause = "WHERE " + strings.Join(where, " AND ")
+		}
+		args = append(args, limit)
+		rows, err = h.db.QueryContext(r.Context(),
+			selectCols+`
+			`+clause+`
+			ORDER BY `+orderBy+`
+			LIMIT ?`, args...)
+	}
+
 	if err != nil {
+		h.log.Error("items list query failed", zap.Error(err))
 		writeError(w, 500, "db error")
 		return
 	}
@@ -74,6 +119,22 @@ func (h *ItemHandler) List(w http.ResponseWriter, r *http.Request) {
 		items = []model.MediaItem{}
 	}
 	writeJSON(w, 200, items)
+}
+
+// fts5Query converts a user search string into an FTS5 MATCH expression.
+// Each word becomes a prefix match; special FTS5 chars are stripped.
+func fts5Query(s string) string {
+	replacer := strings.NewReplacer(`"`, ``, `'`, ``, `*`, ``, `(`, ``, `)`, ``, `:`, ``, `^`, ``, `-`, ` `)
+	s = strings.TrimSpace(replacer.Replace(s))
+	if s == "" {
+		return `""`
+	}
+	words := strings.Fields(s)
+	parts := make([]string, len(words))
+	for i, w := range words {
+		parts[i] = `"` + w + `"*`
+	}
+	return strings.Join(parts, " ")
 }
 
 func (h *ItemHandler) Get(w http.ResponseWriter, r *http.Request) {

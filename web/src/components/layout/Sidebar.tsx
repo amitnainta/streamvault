@@ -1,18 +1,35 @@
-import { NavLink, useNavigate } from 'react-router-dom'
+import { NavLink, useNavigate, useLocation } from 'react-router-dom'
 import {
   Home, Film, Tv, Music, Shield,
-  Library, Users, LogOut, Server
+  Library, Users, LogOut, Server, Search
 } from 'lucide-react'
 import { useAuthStore } from '@/store/authStore'
 import { useQuery } from '@tanstack/react-query'
 import { api } from '@/api/client'
 import type { Library as LibraryType } from '@/types/api'
+import { useState, useEffect } from 'react'
 
 const iconSize = 18
 
 export default function Sidebar() {
   const { user, logout } = useAuthStore()
   const navigate = useNavigate()
+  const location = useLocation()
+  const [searchVal, setSearchVal] = useState('')
+
+  // Sync search box when navigating away from /search
+  useEffect(() => {
+    if (!location.pathname.startsWith('/search')) setSearchVal('')
+  }, [location.pathname])
+
+  // Debounce navigate to /search
+  useEffect(() => {
+    if (!searchVal.trim()) return
+    const t = setTimeout(() => {
+      navigate(`/search?q=${encodeURIComponent(searchVal.trim())}`)
+    }, 300)
+    return () => clearTimeout(t)
+  }, [searchVal, navigate])
 
   const { data: libraries } = useQuery({
     queryKey: ['libraries'],
@@ -37,6 +54,24 @@ export default function Sidebar() {
             <span className="text-white font-bold text-xs">SV</span>
           </div>
           <span className="font-semibold text-foreground">StreamVault</span>
+        </div>
+      </div>
+
+      {/* Search */}
+      <div className="px-3 py-2 border-b border-border">
+        <div className="flex items-center gap-2 px-2 py-1.5 rounded-md bg-muted text-muted-foreground">
+          <Search size={14} className="shrink-0" />
+          <input
+            type="text"
+            placeholder="Search…"
+            value={searchVal}
+            onChange={e => setSearchVal(e.target.value)}
+            onKeyDown={e => {
+              if (e.key === 'Enter' && searchVal.trim())
+                navigate(`/search?q=${encodeURIComponent(searchVal.trim())}`)
+            }}
+            className="bg-transparent text-sm text-foreground placeholder:text-muted-foreground outline-none w-full"
+          />
         </div>
       </div>
 

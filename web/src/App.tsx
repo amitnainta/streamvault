@@ -10,6 +10,7 @@ import AdminDashboard from '@/pages/admin/Dashboard'
 import AdminPrivacy from '@/pages/admin/Privacy'
 import AdminLibraries from '@/pages/admin/Libraries'
 import AdminUsers from '@/pages/admin/Users'
+import SearchPage from '@/pages/Search'
 
 function RequireAuth({ children }: { children: React.ReactNode }) {
   const token = useAuthStore((s) => s.accessToken)
@@ -34,6 +35,7 @@ export default function App() {
         <Route path="library/:id" element={<LibraryPage />} />
         <Route path="item/:id" element={<ItemPage />} />
         <Route path="player/:id" element={<PlayerPage />} />
+        <Route path="search" element={<SearchPage />} />
         <Route path="admin" element={<AdminDashboard />} />
         <Route path="admin/privacy" element={<AdminPrivacy />} />
         <Route path="admin/libraries" element={<AdminLibraries />} />

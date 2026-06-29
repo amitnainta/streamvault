@@ -138,7 +138,15 @@ func (s *Scanner) upsertFile(ctx context.Context, lib model.Library, path string
 		   updated_at=excluded.updated_at`,
 		id, lib.ID, mediaType, path, info.Size(), now, now,
 	)
-	return err
+	if err != nil {
+		return err
+	}
+
+	// Populate FTS5 search index with filename-derived title
+	title := strings.TrimSuffix(filepath.Base(path), filepath.Ext(path))
+	s.db.ExecContext(ctx, `DELETE FROM search_index WHERE item_id=?`, id)
+	s.db.ExecContext(ctx, `INSERT INTO search_index(item_id, title) VALUES(?, ?)`, id, title)
+	return nil
 }
 
 func (s *Scanner) loadExistingPaths(libraryID string) (map[string]bool, error) {
