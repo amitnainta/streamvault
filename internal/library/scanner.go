@@ -120,7 +120,10 @@ func (s *Scanner) upsertFile(ctx context.Context, lib model.Library, path string
 	).Scan(&existingID, &existingSize)
 
 	if existingID != "" && existingSize == info.Size() {
-		return nil // unchanged
+		// File unchanged — still ensure FTS5 index has an entry
+		title := strings.TrimSuffix(filepath.Base(path), filepath.Ext(path))
+		s.db.ExecContext(ctx, `INSERT INTO search_index(item_id, title) SELECT ?,? WHERE NOT EXISTS (SELECT 1 FROM search_index WHERE item_id=?)`, existingID, title, existingID)
+		return nil
 	}
 
 	mediaType := classifyType(lib.Type, path)
