@@ -20,7 +20,8 @@ export default defineConfig({
     },
   },
   server: {
-    // Dev: proxy API calls to local Go server
+    port: 5174,
+    strictPort: true, // fail instead of auto-incrementing to a different port
     proxy: {
       '/api': 'http://localhost:8096',
       '/stream': 'http://localhost:8096',

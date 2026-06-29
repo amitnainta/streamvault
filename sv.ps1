@@ -176,8 +176,9 @@ npm run dev >> "$FRONTEND_LOG" 2>&1
 
 function Stop-All {
     Log "Stopping all StreamVault processes..." Yellow
-    Kill-Port $BACKEND_PORT  "backend"
-    Kill-Port $FRONTEND_PORT "frontend"
+    Kill-Port $BACKEND_PORT      "backend"
+    Kill-Port $FRONTEND_PORT     "frontend"
+    Kill-Port ($FRONTEND_PORT+1) "stray frontend"   # Vite fallback port
     Get-Process -Name "streamvault" -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
     if (Test-Path $PID_FILE) { Remove-Item $PID_FILE -Force }
     Log "All stopped." Yellow
