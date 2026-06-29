@@ -20,8 +20,8 @@ export default defineConfig({
     },
   },
   server: {
-    port: 5174,
-    strictPort: true, // fail instead of auto-incrementing to a different port
+    port: 5180,
+    strictPort: true,
     proxy: {
       '/api': 'http://localhost:8096',
       '/stream': 'http://localhost:8096',
