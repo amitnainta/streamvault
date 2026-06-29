@@ -27,6 +27,7 @@ export default function PlayerPage() {
   const [muted, setMuted] = useState(false)
   const [currentTime, setCurrentTime] = useState(0)
   const [duration, setDuration] = useState(0)
+  const [knownDuration, setKnownDuration] = useState(0)
   const [quality, setQuality] = useState<Quality>('auto')
   const [showQuality, setShowQuality] = useState(false)
   const savedTimeRef = useRef(0)
@@ -64,6 +65,7 @@ export default function PlayerPage() {
     const resumeAt = savedTimeRef.current
 
     stopHls()
+    if (playback.duration_ms) setKnownDuration(playback.duration_ms / 1000)
 
     const tryPlay = () => {
       if (resumeAt > 0) video.currentTime = resumeAt
@@ -160,7 +162,7 @@ export default function PlayerPage() {
           <input
             type="range"
             min={0}
-            max={duration}
+            max={knownDuration || duration}
             value={currentTime}
             onChange={seek}
             className="w-full h-1 accent-accent cursor-pointer"
@@ -176,7 +178,7 @@ export default function PlayerPage() {
               >
                 {muted ? <VolumeX size={18} /> : <Volume2 size={18} />}
               </button>
-              <span className="text-white text-sm">{fmt(currentTime)} / {fmt(duration)}</span>
+              <span className="text-white text-sm">{fmt(currentTime)} / {fmt(knownDuration || duration)}</span>
             </div>
 
             <div className="flex items-center gap-3">

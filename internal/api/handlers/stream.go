@@ -39,9 +39,10 @@ func (h *StreamHandler) StartSession(w http.ResponseWriter, r *http.Request) {
 
 	var filePath string
 	var container sql.NullString
+	var durationMs int64
 	err := h.db.QueryRowContext(r.Context(),
-		`SELECT file_path, container FROM media_items WHERE id=?`, itemID,
-	).Scan(&filePath, &container)
+		`SELECT file_path, container, COALESCE(duration_ms,0) FROM media_items WHERE id=?`, itemID,
+	).Scan(&filePath, &container, &durationMs)
 	if err == sql.ErrNoRows {
 		writeError(w, 404, "item not found")
 		return
@@ -59,9 +60,10 @@ func (h *StreamHandler) StartSession(w http.ResponseWriter, r *http.Request) {
 
 	// Direct play when quality is auto (or unset) and format is browser-native
 	if (quality == "" || quality == "auto") && canDirectPlay(c) {
-		writeJSON(w, 200, map[string]string{
-			"type": "direct",
-			"url":  "/direct/" + itemID,
+		writeJSON(w, 200, map[string]any{
+			"type":        "direct",
+			"url":         "/direct/" + itemID,
+			"duration_ms": durationMs,
 		})
 		return
 	}
@@ -79,10 +81,11 @@ func (h *StreamHandler) StartSession(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	writeJSON(w, 200, map[string]string{
-		"type":       "hls",
-		"session_id": sessionID,
-		"url":        "/stream/hls/" + sessionID + "/index.m3u8",
+	writeJSON(w, 200, map[string]any{
+		"type":        "hls",
+		"session_id":  sessionID,
+		"url":         "/stream/hls/" + sessionID + "/index.m3u8",
+		"duration_ms": durationMs,
 	})
 }
 

@@ -67,6 +67,7 @@ export interface PlaybackInfo {
   type: 'hls' | 'direct'
   url: string
   session_id?: string
+  duration_ms?: number
 }
 
 export interface PlaybackProgress {
