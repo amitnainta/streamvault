@@ -106,7 +106,7 @@ export default function PlayerPage() {
     setQuality(q)
     // Stop current HLS session before refetch starts a new one
     if (playback?.type === 'hls' && playback.session_id) {
-      api.delete(`/stream/hls/${playback.session_id}`).catch(() => {})
+      api.delete(`/stream/sessions/${playback.session_id}`).catch(() => {})
     }
     refetchPlayback()
   }
