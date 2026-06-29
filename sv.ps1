@@ -132,45 +132,21 @@ function Start-Backend {
 
     Log "Starting backend on :$BACKEND_PORT ..." Cyan
 
-    $psi = New-Object System.Diagnostics.ProcessStartInfo
-    $psi.FileName               = $BINARY
-    $psi.WorkingDirectory       = $ROOT
-    $psi.UseShellExecute        = $false
-    $psi.RedirectStandardOutput = $true
-    $psi.RedirectStandardError  = $true
-    $psi.CreateNoWindow         = $true
+    # Write a wrapper script so we can set env vars and redirect output
+    $wrapper = Join-Path $LOG_DIR "start_backend.cmd"
+    @"
+@echo off
+set SV_DATABASE_URL=$DB_PATH
+set SV_STORAGE_DATA_DIR=$DATA_DIR
+set SV_SERVER_PORT=$BACKEND_PORT
+set PATH=$FFMPEG_BIN;$GO_BIN;%PATH%
+"$BINARY" >> "$BACKEND_LOG" 2>&1
+"@ | Set-Content $wrapper -Encoding ASCII
 
-    # Environment
-    $psi.EnvironmentVariables["SV_DATABASE_URL"]    = $DB_PATH
-    $psi.EnvironmentVariables["SV_STORAGE_DATA_DIR"]= $DATA_DIR
-    $psi.EnvironmentVariables["SV_SERVER_PORT"]     = "$BACKEND_PORT"
-    $psi.EnvironmentVariables["PATH"]               = $env:PATH
+    $proc = Start-Process -FilePath "cmd.exe" -ArgumentList "/c `"$wrapper`"" `
+        -WorkingDirectory $ROOT -PassThru -WindowStyle Hidden
 
-    $proc = New-Object System.Diagnostics.Process
-    $proc.StartInfo = $psi
-
-    # Async log capture - write to file AND live to console with prefix
-    $backendProcRef = [ref]$proc
-    $proc.OutputDataReceived += {
-        param($s, $e)
-        if ($e.Data) {
-            $line = "  [backend] $($e.Data)"
-            $line | Add-Content $BACKEND_LOG -Encoding UTF8
-        }
-    }
-    $proc.ErrorDataReceived += {
-        param($s, $e)
-        if ($e.Data) {
-            $line = "  [backend] $($e.Data)"
-            $line | Add-Content $BACKEND_LOG -Encoding UTF8
-        }
-    }
-
-    $proc.Start() | Out-Null
-    $proc.BeginOutputReadLine()
-    $proc.BeginErrorReadLine()
-
-    Log "Backend PID $($proc.Id)" Green
+    Log "Backend PID $($proc.Id)  (log: logs\backend.log)" Green
     return $proc
 }
 
@@ -184,32 +160,17 @@ function Start-Frontend {
 
     Log "Starting frontend dev server on :$FRONTEND_PORT ..." Cyan
 
-    $psi = New-Object System.Diagnostics.ProcessStartInfo
-    $psi.FileName               = "cmd.exe"
-    $psi.Arguments              = "/c npm run dev"
-    $psi.WorkingDirectory       = $WEB_DIR
-    $psi.UseShellExecute        = $false
-    $psi.RedirectStandardOutput = $true
-    $psi.RedirectStandardError  = $true
-    $psi.CreateNoWindow         = $true
+    $wrapper = Join-Path $LOG_DIR "start_frontend.cmd"
+    @"
+@echo off
+cd /d "$WEB_DIR"
+npm run dev >> "$FRONTEND_LOG" 2>&1
+"@ | Set-Content $wrapper -Encoding ASCII
 
-    $proc = New-Object System.Diagnostics.Process
-    $proc.StartInfo = $psi
+    $proc = Start-Process -FilePath "cmd.exe" -ArgumentList "/c `"$wrapper`"" `
+        -WorkingDirectory $WEB_DIR -PassThru -WindowStyle Hidden
 
-    $proc.OutputDataReceived += {
-        param($s, $e)
-        if ($e.Data) { "  [frontend] $($e.Data)" | Add-Content $FRONTEND_LOG -Encoding UTF8 }
-    }
-    $proc.ErrorDataReceived += {
-        param($s, $e)
-        if ($e.Data) { "  [frontend] $($e.Data)" | Add-Content $FRONTEND_LOG -Encoding UTF8 }
-    }
-
-    $proc.Start() | Out-Null
-    $proc.BeginOutputReadLine()
-    $proc.BeginErrorReadLine()
-
-    Log "Frontend PID $($proc.Id)" Green
+    Log "Frontend PID $($proc.Id)  (log: logs\frontend.log)" Green
     return $proc
 }
 
