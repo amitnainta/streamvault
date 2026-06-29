@@ -45,16 +45,22 @@ export default function PlayerPage() {
     if (!playback || !videoRef.current) return
     const video = videoRef.current
 
+    const tryPlay = () => video.play().catch(() => {/* blocked by autoplay policy — user clicks manually */})
+
     if (playback.type === 'direct') {
       video.src = playback.url
+      video.load()
+      video.addEventListener('canplay', tryPlay, { once: true })
     } else if (Hls.isSupported()) {
       const token = useAuthStore.getState().accessToken
       const hls = new Hls({ xhrSetup: (xhr) => xhr.setRequestHeader('Authorization', `Bearer ${token}`) })
       hls.loadSource(playback.url)
       hls.attachMedia(video)
+      hls.on(Hls.Events.MANIFEST_PARSED, tryPlay)
       hlsRef.current = hls
     } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
-      video.src = playback.url // Safari native HLS
+      video.src = playback.url
+      video.addEventListener('canplay', tryPlay, { once: true })
     }
 
     return () => {
@@ -107,7 +113,7 @@ export default function PlayerPage() {
       />
 
       {/* Controls overlay */}
-      <div className="absolute inset-0 flex flex-col justify-between p-4 bg-gradient-to-b from-black/60 via-transparent to-black/80 opacity-0 hover:opacity-100 transition-opacity">
+      <div className={`absolute inset-0 flex flex-col justify-between p-4 bg-gradient-to-b from-black/60 via-transparent to-black/80 transition-opacity ${playing ? 'opacity-0 hover:opacity-100' : 'opacity-100'}`}>
         {/* Top bar */}
         <div className="flex items-center gap-3">
           <button onClick={() => navigate(-1)} className="text-white hover:text-white/80">

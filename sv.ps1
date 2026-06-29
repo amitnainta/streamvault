@@ -178,11 +178,7 @@ function Stop-All {
     Log "Stopping all StreamVault processes..." Yellow
     Kill-Port $BACKEND_PORT  "backend"
     Kill-Port $FRONTEND_PORT "frontend"
-    # Also kill any stray node/streamvault processes by name
-    Get-Process -Name "streamvault" -ErrorAction SilentlyContinue | Stop-Process -Force
-    Get-Process -Name "node"        -ErrorAction SilentlyContinue |
-        Where-Object { $_.MainWindowTitle -eq "" } |
-        Stop-Process -Force -ErrorAction SilentlyContinue
+    Get-Process -Name "streamvault" -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
     if (Test-Path $PID_FILE) { Remove-Item $PID_FILE -Force }
     Log "All stopped." Yellow
 }
