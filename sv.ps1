@@ -16,7 +16,9 @@ $BINARY      = Join-Path $ROOT "streamvault.exe"
 $WEB_DIR     = Join-Path $ROOT "web"
 $DATA_DIR    = "C:\streamvault-data"
 $DB_PATH     = "$DATA_DIR\streamvault.db"
-$FFMPEG_BIN  = "$env:LOCALAPPDATA\ffmpeg\bin"
+# Auto-detect FFmpeg: prefer winget install, fall back to manual install
+$_wingetFfmpeg = Get-ChildItem "$env:LOCALAPPDATA\Microsoft\WinGet\Packages" -Recurse -Filter "ffmpeg.exe" -ErrorAction SilentlyContinue | Select-Object -First 1
+$FFMPEG_BIN  = if ($_wingetFfmpeg) { $_wingetFfmpeg.DirectoryName } else { "$env:LOCALAPPDATA\ffmpeg\bin" }
 $GO_BIN      = "C:\go\bin"
 $BACKEND_PORT  = 8096
 $FRONTEND_PORT = 5180
