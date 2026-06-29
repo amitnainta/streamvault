@@ -111,11 +111,11 @@ func NewRouter(d Deps) http.Handler {
 		})
 	})
 
-	// ── Streaming (auth via ?token= query param) ──────────────────────────
+	// ── Streaming (no auth — protected by UUID session/item IDs) ────────────
 	streamH := handlers.NewStreamHandler(d.DB, d.Transcoder, d.Logger)
-	r.With(apimw.Auth(d.DB)).Get("/stream/hls/{sessionId}/index.m3u8", streamH.HLSManifest)
-	r.With(apimw.Auth(d.DB)).Get("/stream/hls/{sessionId}/{segment}", streamH.HLSSegment)
-	r.With(apimw.Auth(d.DB)).Get("/direct/{id}", streamH.DirectPlay)
+	r.Get("/stream/hls/{sessionId}/index.m3u8", streamH.HLSManifest)
+	r.Get("/stream/hls/{sessionId}/{segment}", streamH.HLSSegment)
+	r.Get("/direct/{id}", streamH.DirectPlay)
 
 	// ── Artwork ────────────────────────────────────────────────────────────
 	artH := handlers.NewStreamHandler(d.DB, d.Transcoder, d.Logger)

@@ -4,6 +4,8 @@ import (
 	"database/sql"
 	"net/http"
 	"os"
+	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/go-chi/chi/v5"
@@ -22,11 +24,14 @@ func NewStreamHandler(db *sql.DB, engine *transcode.Engine, log *zap.Logger) *St
 	return &StreamHandler{db: db, engine: engine, log: log}
 }
 
-// StartSession picks between direct play and transcode based on client capability.
+// StartSession picks between direct play and HLS transcode.
+// Direct play is used for formats the browser can play natively (mp4, webm, etc.).
+// HLS transcode is used for everything else (mkv, avi, etc.).
 func (h *StreamHandler) StartSession(w http.ResponseWriter, r *http.Request) {
 	itemID := chi.URLParam(r, "id")
 
-	var filePath, container string
+	var filePath string
+	var container sql.NullString
 	err := h.db.QueryRowContext(r.Context(),
 		`SELECT file_path, container FROM media_items WHERE id=?`, itemID,
 	).Scan(&filePath, &container)
@@ -34,21 +39,31 @@ func (h *StreamHandler) StartSession(w http.ResponseWriter, r *http.Request) {
 		writeError(w, 404, "item not found")
 		return
 	}
+	if err != nil {
+		writeError(w, 500, "db error")
+		return
+	}
 
-	// Simple negotiation: if client sends ?direct=true and file is natively playable, redirect to /direct
-	if r.URL.Query().Get("direct") == "true" && canDirectPlay(container) {
+	// Derive container from file extension if DB column is not populated yet
+	c := container.String
+	if c == "" {
+		c = strings.TrimPrefix(strings.ToLower(filepath.Ext(filePath)), ".")
+	}
+
+	// Direct play: browser-native formats play without FFmpeg
+	if canDirectPlay(c) {
 		writeJSON(w, 200, map[string]string{
-			"type":    "direct",
-			"url":     "/direct/" + itemID,
+			"type": "direct",
+			"url":  "/direct/" + itemID,
 		})
 		return
 	}
 
-	// Otherwise start HLS transcode session
+	// HLS transcode for everything else
 	sessionID, err := h.engine.StartSession(itemID, filePath)
 	if err != nil {
 		h.log.Error("failed to start transcode session", zap.Error(err))
-		writeError(w, 500, "transcode error")
+		writeError(w, 500, "transcode error: "+err.Error())
 		return
 	}
 
@@ -144,9 +159,12 @@ func (h *StreamHandler) StopSession(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(204)
 }
 
+// canDirectPlay returns true for formats that Chrome/Firefox/Safari can play natively
+// without any FFmpeg transcoding.
 func canDirectPlay(container string) bool {
 	switch container {
-	case "mp4", "webm", "ogg", "mp3", "flac", "wav", "aac":
+	case "mp4", "m4v", "webm", "ogg",
+		"mp3", "m4a", "flac", "wav", "aac", "opus":
 		return true
 	}
 	return false
