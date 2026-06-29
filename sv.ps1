@@ -83,11 +83,11 @@ function Get-PidOnPort {
 
 function Kill-Port {
     param([int]$Port, [string]$Name)
-    $pid = Get-PidOnPort $Port
-    if ($pid) {
+    $portPid = Get-PidOnPort $Port
+    if ($portPid) {
         try {
-            Stop-Process -Id $pid -Force -ErrorAction SilentlyContinue
-            Log "Stopped $Name (PID $pid on port $Port)" Yellow
+            Stop-Process -Id $portPid -Force -ErrorAction SilentlyContinue
+            Log "Stopped $Name (PID $portPid on port $Port)" Yellow
         } catch {
             Log "Could not stop $Name on port $Port`: $_" Red
         }
@@ -230,20 +230,20 @@ function Stop-All {
 
 function Show-Status {
     Write-Header
-    $bPid = Get-PidOnPort $BACKEND_PORT
-    $fPid = Get-PidOnPort $FRONTEND_PORT
+    $bPortPid = Get-PidOnPort $BACKEND_PORT
+    $fPortPid = Get-PidOnPort $FRONTEND_PORT
     $bOk  = Test-Backend
     $fOk  = Test-Frontend
 
-    $bStatus = if ($bOk) { "HEALTHY  :$BACKEND_PORT  PID $bPid" } `
-               elseif ($bPid) { "RUNNING (not ready yet)  PID $bPid" } `
+    $bStatus = if ($bOk) { "HEALTHY  :$BACKEND_PORT  PID $bPortPid" } `
+               elseif ($bPortPid) { "RUNNING (not ready yet)  PID $bPortPid" } `
                else { "STOPPED" }
-    $fStatus = if ($fOk) { "HEALTHY  :$FRONTEND_PORT  PID $fPid" } `
-               elseif ($fPid) { "RUNNING (not ready yet)  PID $fPid" } `
+    $fStatus = if ($fOk) { "HEALTHY  :$FRONTEND_PORT  PID $fPortPid" } `
+               elseif ($fPortPid) { "RUNNING (not ready yet)  PID $fPortPid" } `
                else { "STOPPED" }
 
-    $bColor = if ($bOk) { "Green" } elseif ($bPid) { "Yellow" } else { "Red" }
-    $fColor = if ($fOk) { "Green" } elseif ($fPid) { "Yellow" } else { "Red" }
+    $bColor = if ($bOk) { "Green" } elseif ($bPortPid) { "Yellow" } else { "Red" }
+    $fColor = if ($fOk) { "Green" } elseif ($fPortPid) { "Yellow" } else { "Red" }
 
     Write-Host "  Backend  : " -NoNewline; Write-Host $bStatus -ForegroundColor $bColor
     Write-Host "  Frontend : " -NoNewline; Write-Host $fStatus -ForegroundColor $fColor
