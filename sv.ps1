@@ -362,19 +362,22 @@ switch ($cmd) {
 
     "build" {
         # Build frontend then recompile binary so localhost:8096 serves the app
+        $BUILD_LOG = Join-Path $LOG_DIR "build.log"
         Log "Building frontend (npm run build)..." Cyan
         $npmResult = & npm run build --prefix $WEB_DIR 2>&1
-        $npmResult | Tee-Object -Append $BACKEND_LOG | Write-Host
-        if ($LASTEXITCODE -ne 0) { Log "Frontend build failed" Red; exit 1 }
+        $npmResult | Out-File $BUILD_LOG -Encoding UTF8
+        $npmResult | Write-Host
+        if ($LASTEXITCODE -ne 0) { Log "Frontend build failed — see logs\build.log" Red; exit 1 }
         Log "Frontend build OK" Green
 
         Log "Recompiling streamvault.exe..." Cyan
         Set-SVPath
         $env:CGO_ENABLED = "0"
         $goResult = & "$GO_BIN\go.exe" build -o $BINARY ./cmd/streamvault/ 2>&1
-        $goResult | Tee-Object -Append $BACKEND_LOG | Write-Host
-        if ($LASTEXITCODE -ne 0) { Log "Go build failed" Red; exit 1 }
-        Log "Build complete. Restart with: .\sv.ps1 restart" Green
+        $goResult | Out-File $BUILD_LOG -Append -Encoding UTF8
+        $goResult | Write-Host
+        if ($LASTEXITCODE -ne 0) { Log "Go build failed — see logs\build.log" Red; exit 1 }
+        Log "Build complete. Run: .\sv.ps1 restart" Green
     }
 
     default {
