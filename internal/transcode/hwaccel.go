@@ -1,9 +1,6 @@
 package transcode
 
-import (
-	"os/exec"
-	"strings"
-)
+import "os/exec"
 
 // HWAccelType identifies the hardware acceleration method.
 type HWAccelType string
@@ -16,27 +13,38 @@ const (
 	HWAccelVAAPI HWAccelType = "vaapi"
 )
 
-// DetectBestHWAccel probes FFmpeg for available hardware encoders.
-// Returns the best available option in priority order.
+// DetectBestHWAccel probes FFmpeg by doing a real test encode for each
+// hardware encoder in priority order. Listing encoders is not enough —
+// an encoder can be compiled in but fail at runtime with no GPU present.
 func DetectBestHWAccel() HWAccelType {
-	out, err := exec.Command("ffmpeg", "-hide_banner", "-encoders").Output()
-	if err != nil {
-		return HWAccelNone
+	candidates := []struct {
+		hw      HWAccelType
+		encoder string
+	}{
+		{HWAccelNVENC, "h264_nvenc"},
+		{HWAccelQSV, "h264_qsv"},
+		{HWAccelAMF, "h264_amf"},
+		{HWAccelVAAPI, "h264_vaapi"},
 	}
-	encoders := string(out)
 
-	switch {
-	case strings.Contains(encoders, "h264_nvenc"):
-		return HWAccelNVENC
-	case strings.Contains(encoders, "h264_qsv"):
-		return HWAccelQSV
-	case strings.Contains(encoders, "h264_amf"):
-		return HWAccelAMF
-	case strings.Contains(encoders, "h264_vaapi"):
-		return HWAccelVAAPI
-	default:
-		return HWAccelNone
+	for _, c := range candidates {
+		if testEncoder(c.encoder) {
+			return c.hw
+		}
 	}
+	return HWAccelNone
+}
+
+// testEncoder runs a 1-second null encode to verify the encoder works at runtime.
+func testEncoder(encoder string) bool {
+	cmd := exec.Command("ffmpeg",
+		"-hide_banner", "-loglevel", "error",
+		"-f", "lavfi", "-i", "nullsrc=s=128x128:d=1",
+		"-c:v", encoder,
+		"-f", "null", "-",
+	)
+	err := cmd.Run()
+	return err == nil
 }
 
 // VideoEncoder returns the FFmpeg encoder name for the given HW accel type.
