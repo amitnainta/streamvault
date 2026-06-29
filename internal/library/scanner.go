@@ -60,6 +60,7 @@ func (s *Scanner) ScanLibrary(ctx context.Context, lib model.Library) error {
 	var count int
 
 	for _, root := range lib.Paths {
+		root = filepath.FromSlash(root) // normalise forward-slashes on Windows
 		if err := filepath.WalkDir(root, func(path string, d fs.DirEntry, err error) error {
 			if err != nil || d.IsDir() {
 				return nil
@@ -128,13 +129,14 @@ func (s *Scanner) upsertFile(ctx context.Context, lib model.Library, path string
 		id = uuid.New().String()
 	}
 
+	now := time.Now()
 	_, err = s.db.ExecContext(ctx,
-		`INSERT INTO media_items(id,library_id,type,file_path,file_size,updated_at)
-		 VALUES(?,?,?,?,?,?)
+		`INSERT INTO media_items(id,library_id,type,file_path,file_size,added_at,updated_at)
+		 VALUES(?,?,?,?,?,?,?)
 		 ON CONFLICT(file_path) DO UPDATE SET
 		   file_size=excluded.file_size,
 		   updated_at=excluded.updated_at`,
-		id, lib.ID, mediaType, path, info.Size(), time.Now(),
+		id, lib.ID, mediaType, path, info.Size(), now, now,
 	)
 	return err
 }

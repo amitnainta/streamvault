@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"database/sql"
 	"encoding/json"
 	"net/http"
@@ -136,7 +137,7 @@ func (h *LibraryHandler) Scan(w http.ResponseWriter, r *http.Request) {
 	json.Unmarshal([]byte(pathsJSON), &lib.Paths)
 
 	scanner := library.NewScanner(h.db, h.log)
-	go scanner.ScanLibrary(r.Context(), lib)
+	go scanner.ScanLibrary(context.Background(), lib)
 
 	writeJSON(w, 202, map[string]string{"status": "scan started", "library_id": id})
 }
