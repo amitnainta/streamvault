@@ -76,8 +76,8 @@ func (h *ItemHandler) List(w http.ResponseWriter, r *http.Request) {
 		args = append(args, limit)
 		rows, err = h.db.QueryContext(r.Context(),
 			selectCols+`
-			JOIN search_index si ON si.item_id = m.id
-			WHERE si MATCH ? `+clause+`
+			JOIN search_index ON search_index.item_id = m.id
+			WHERE search_index MATCH ? `+clause+`
 			ORDER BY `+orderBy+`
 			LIMIT ?`, args...)
 	} else {
