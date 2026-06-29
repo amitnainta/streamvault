@@ -1,9 +1,12 @@
 # StreamVault — Product Requirements Document
 
-**Version:** 0.2
+**Version:** 0.4
 **Date:** 2026-06-28
 **Status:** Under Review
-**Changelog:** v0.2 — Added F0 (Offline-First & Privacy Controls) as P0 feature set. Promoted privacy to a first-class design pillar throughout. Every internet-connected feature now documented with: what data leaves the device, what external service receives it, and how to disable it. Metadata section updated to reflect offline-first fallback behavior.
+**Changelog:**
+- v0.4 — Playback verified end-to-end on both dev (:5180) and production (:8096). F3.1 direct play and F4.9 video player marked tested. .MOV (Canon camera) confirmed playing natively.
+- v0.3 — Added implementation tracking columns (Impl / Test / Git) to all feature tables. Status reflects MVP build session through 2026-06-28.
+- v0.2 — Added F0 (Offline-First & Privacy Controls) as P0 feature set. Promoted privacy to a first-class design pillar throughout. Every internet-connected feature now documented with: what data leaves the device, what external service receives it, and how to disable it. Metadata section updated to reflect offline-first fallback behavior.
 
 ---
 
@@ -196,6 +199,19 @@ These guide every design and implementation decision:
 - **P2** — Phase 2
 - **P3** — Phase 3 / Future
 
+### Tracking Status
+
+| Symbol | Meaning |
+|--------|---------|
+| ✅ | Done |
+| 🔄 | In progress / partial |
+| ⬜ | Not started |
+
+Three columns appear at the right of every feature table:
+- **Impl** — backend + frontend code written
+- **Test** — manually verified end-to-end
+- **Git** — committed to main branch
+
 ---
 
 ### F0 — Offline-First & Privacy Controls *(NEW — P0)*
@@ -204,41 +220,41 @@ This is the foundational feature set. All other internet-dependent features (F2 
 
 #### F0.1 — Master Internet Toggle
 
-| ID | Feature | Priority | Detail |
-|----|---------|----------|--------|
-| F0.1.1 | Master "Allow Internet Access" toggle in Settings | P0 | Single switch. When OFF, StreamVault makes **zero outbound network requests** to any external host. All sub-settings below are automatically disabled and greyed out. |
-| F0.1.2 | Master toggle defaults to OFF on first install | P0 | User must consciously enable internet access. Opt-in, not opt-out. |
-| F0.1.3 | Master toggle state persisted across restarts | P0 | Stored in server config, not per-user preference. Admin-only setting. |
-| F0.1.4 | Visual indicator in UI when internet is disabled | P0 | Subtle badge or status icon in the admin panel header showing "Offline Mode" |
-| F0.1.5 | Network activity log (admin only) | P1 | Timestamped log of every outbound request StreamVault has made, including: destination host, purpose, data sent. Viewable in admin panel. |
+| ID | Feature | Priority | Detail | Impl | Test | Git |
+|----|---------|----------|--------|------|------|-----|
+| F0.1.1 | Master "Allow Internet Access" toggle in Settings | P0 | Single switch. When OFF, StreamVault makes **zero outbound network requests** to any external host. All sub-settings below are automatically disabled and greyed out. | ⬜ | ⬜ | ⬜ |
+| F0.1.2 | Master toggle defaults to OFF on first install | P0 | User must consciously enable internet access. Opt-in, not opt-out. | ⬜ | ⬜ | ⬜ |
+| F0.1.3 | Master toggle state persisted across restarts | P0 | Stored in server config, not per-user preference. Admin-only setting. | ⬜ | ⬜ | ⬜ |
+| F0.1.4 | Visual indicator in UI when internet is disabled | P0 | Subtle badge or status icon in the admin panel header showing "Offline Mode" | ⬜ | ⬜ | ⬜ |
+| F0.1.5 | Network activity log (admin only) | P1 | Timestamped log of every outbound request StreamVault has made, including: destination host, purpose, data sent. Viewable in admin panel. | ⬜ | ⬜ | ⬜ |
 
 #### F0.2 — Per-Feature Internet Sub-Settings
 
 Each sub-setting is only visible and configurable when the master toggle (F0.1.1) is ON. Each sub-setting defaults to OFF when master toggle is first enabled.
 
-| ID | Feature | Priority | External Service | Data Sent | Data Received |
-|----|---------|----------|-----------------|-----------|---------------|
-| F0.2.1 | Movie/TV metadata lookup — TMDB | P0 | api.themoviedb.org | Movie/show title, release year | Title, description, genres, cast, rating, poster URL |
-| F0.2.2 | Movie/TV artwork download — TMDB | P0 | image.tmdb.org | Artwork file paths (URLs from F0.2.1 results) | JPEG/PNG poster, backdrop, logo images |
-| F0.2.3 | Music metadata lookup — MusicBrainz | P1 | musicbrainz.org | Artist name, album title, track title | Track metadata, album art URL |
-| F0.2.4 | Music artwork download — Cover Art Archive | P1 | coverartarchive.org | MusicBrainz release ID | Album cover JPEG/PNG |
-| F0.2.5 | Software update check | P1 | api.github.com (or self-hosted) | StreamVault version number | Latest release version number |
-| F0.2.6 | Subtitle download (if subtitle provider plugin enabled) | P2 | Provider-specific (e.g., OpenSubtitles) | Movie/show title, language, hash | Subtitle file (.srt/.vtt) |
-| F0.2.7 | Fan-art / extra artwork (TheTVDB, Fanart.tv) | P2 | thetvdb.com, fanart.tv | Show title or TVDB ID | Posters, banners, clearart |
-| F0.2.8 | Crash/error reporting (opt-in) | P2 | Self-hosted or Sentry-compatible endpoint | Stack trace, OS info, StreamVault version — **never** media filenames, user data, or library info | Confirmation receipt |
-| F0.2.9 | Anonymous usage statistics (opt-in) | P3 | Self-hosted stats endpoint | Feature usage counts, performance metrics — **no** filenames, titles, or user-identifying data | None |
+| ID | Feature | Priority | External Service | Data Sent | Data Received | Impl | Test | Git |
+|----|---------|----------|-----------------|-----------|---------------|------|------|-----|
+| F0.2.1 | Movie/TV metadata lookup — TMDB | P0 | api.themoviedb.org | Movie/show title, release year | Title, description, genres, cast, rating, poster URL | ⬜ | ⬜ | ⬜ |
+| F0.2.2 | Movie/TV artwork download — TMDB | P0 | image.tmdb.org | Artwork file paths (URLs from F0.2.1 results) | JPEG/PNG poster, backdrop, logo images | ⬜ | ⬜ | ⬜ |
+| F0.2.3 | Music metadata lookup — MusicBrainz | P1 | musicbrainz.org | Artist name, album title, track title | Track metadata, album art URL | ⬜ | ⬜ | ⬜ |
+| F0.2.4 | Music artwork download — Cover Art Archive | P1 | coverartarchive.org | MusicBrainz release ID | Album cover JPEG/PNG | ⬜ | ⬜ | ⬜ |
+| F0.2.5 | Software update check | P1 | api.github.com (or self-hosted) | StreamVault version number | Latest release version number | ⬜ | ⬜ | ⬜ |
+| F0.2.6 | Subtitle download (if subtitle provider plugin enabled) | P2 | Provider-specific (e.g., OpenSubtitles) | Movie/show title, language, hash | Subtitle file (.srt/.vtt) | ⬜ | ⬜ | ⬜ |
+| F0.2.7 | Fan-art / extra artwork (TheTVDB, Fanart.tv) | P2 | thetvdb.com, fanart.tv | Show title or TVDB ID | Posters, banners, clearart | ⬜ | ⬜ | ⬜ |
+| F0.2.8 | Crash/error reporting (opt-in) | P2 | Self-hosted or Sentry-compatible endpoint | Stack trace, OS info, StreamVault version — **never** media filenames, user data, or library info | Confirmation receipt | ⬜ | ⬜ | ⬜ |
+| F0.2.9 | Anonymous usage statistics (opt-in) | P3 | Self-hosted stats endpoint | Feature usage counts, performance metrics — **no** filenames, titles, or user-identifying data | None | ⬜ | ⬜ | ⬜ |
 
 #### F0.3 — Settings UI Requirements
 
-| ID | Feature | Priority | Detail |
-|----|---------|----------|--------|
-| F0.3.1 | Settings page: "Privacy & Internet" section is the first section in admin settings | P0 | Visual prominence signals that privacy matters |
-| F0.3.2 | Each sub-setting card shows: toggle, service name, what data is sent, what is received | P0 | No separate privacy policy document — information is inline |
-| F0.3.3 | Each sub-setting card shows the external hostname(s) contacted | P0 | e.g., "Connects to: api.themoviedb.org, image.tmdb.org" |
-| F0.3.4 | "What happens if I disable this?" explanation on each card | P0 | e.g., "Metadata will not be enriched. Movie posters will show a placeholder. You can add metadata manually." |
-| F0.3.5 | Warning when enabling any sub-setting: "This will send data to [Service]. Continue?" | P1 | One-time confirmation per feature; remembered after first accept |
-| F0.3.6 | "Disable All Internet Features" quick-action button | P0 | Equivalent to flipping master toggle OFF, but from sub-settings view |
-| F0.3.7 | Privacy summary panel: shows count of enabled internet features and last internet activity timestamp | P1 | At-a-glance audit view for the admin |
+| ID | Feature | Priority | Detail | Impl | Test | Git |
+|----|---------|----------|--------|------|------|-----|
+| F0.3.1 | Settings page: "Privacy & Internet" section is the first section in admin settings | P0 | Visual prominence signals that privacy matters | 🔄 | ⬜ | ✅ |
+| F0.3.2 | Each sub-setting card shows: toggle, service name, what data is sent, what is received | P0 | No separate privacy policy document — information is inline | ⬜ | ⬜ | ⬜ |
+| F0.3.3 | Each sub-setting card shows the external hostname(s) contacted | P0 | e.g., "Connects to: api.themoviedb.org, image.tmdb.org" | ⬜ | ⬜ | ⬜ |
+| F0.3.4 | "What happens if I disable this?" explanation on each card | P0 | e.g., "Metadata will not be enriched. Movie posters will show a placeholder. You can add metadata manually." | ⬜ | ⬜ | ⬜ |
+| F0.3.5 | Warning when enabling any sub-setting: "This will send data to [Service]. Continue?" | P1 | One-time confirmation per feature; remembered after first accept | ⬜ | ⬜ | ⬜ |
+| F0.3.6 | "Disable All Internet Features" quick-action button | P0 | Equivalent to flipping master toggle OFF, but from sub-settings view | ⬜ | ⬜ | ⬜ |
+| F0.3.7 | Privacy summary panel: shows count of enabled internet features and last internet activity timestamp | P1 | At-a-glance audit view for the admin | ⬜ | ⬜ | ⬜ |
 
 #### F0.4 — Offline Operation Guarantees
 
@@ -258,28 +274,28 @@ The following must work with zero internet, no exceptions:
 
 #### F0.5 — Metadata Caching & Staleness Policy
 
-| ID | Feature | Priority | Detail |
-|----|---------|----------|--------|
-| F0.5.1 | All downloaded metadata (text + images) is persisted locally in the database/disk | P0 | After first fetch, no re-fetch unless user explicitly triggers "Refresh Metadata" |
-| F0.5.2 | Internet sub-settings can be turned OFF after initial metadata fetch | P0 | User can do a one-time fetch, then go fully offline permanently |
-| F0.5.3 | "Last fetched" timestamp shown per media item in admin detail view | P1 | Audit trail for when metadata was pulled |
-| F0.5.4 | Manual "Refresh Metadata" action per item or per library (requires internet to be enabled) | P1 | User-initiated only; never automatic background re-fetch |
-| F0.5.5 | Metadata images stored in local `data/artwork/` directory, not re-downloaded on each request | P0 | Served from local disk; external image URLs are never proxied live |
+| ID | Feature | Priority | Detail | Impl | Test | Git |
+|----|---------|----------|--------|------|------|-----|
+| F0.5.1 | All downloaded metadata (text + images) is persisted locally in the database/disk | P0 | After first fetch, no re-fetch unless user explicitly triggers "Refresh Metadata" | ⬜ | ⬜ | ⬜ |
+| F0.5.2 | Internet sub-settings can be turned OFF after initial metadata fetch | P0 | User can do a one-time fetch, then go fully offline permanently | ⬜ | ⬜ | ⬜ |
+| F0.5.3 | "Last fetched" timestamp shown per media item in admin detail view | P1 | Audit trail for when metadata was pulled | ⬜ | ⬜ | ⬜ |
+| F0.5.4 | Manual "Refresh Metadata" action per item or per library (requires internet to be enabled) | P1 | User-initiated only; never automatic background re-fetch | ⬜ | ⬜ | ⬜ |
+| F0.5.5 | Metadata images stored in local `data/artwork/` directory, not re-downloaded on each request | P0 | Served from local disk; external image URLs are never proxied live | ⬜ | ⬜ | ⬜ |
 
 ---
 
 ### F1 — Media Library Management
 
-| ID | Feature | Priority | Notes |
-|----|---------|----------|-------|
-| F1.1 | Scan local directories for media files | P0 | Recursive, configurable paths |
-| F1.2 | Incremental scan (detect new/changed/deleted files only) | P0 | Do not re-scan entire library |
-| F1.3 | Real-time file watching (inotify / FSEvents / ReadDirectoryChanges) | P1 | Detect additions without manual trigger |
-| F1.4 | Organize by Movies / TV Shows / Music | P0 | Separate library views per media type |
-| F1.5 | Multi-library support (e.g., separate "Kids" library) | P1 | Different directories → different libraries |
-| F1.6 | Library size display (item count, total storage) | P1 | Dashboard stat |
-| F1.7 | Batch library operations (re-scan, re-match metadata) | P2 | Needed for large collections |
-| F1.8 | Duplicate detection | P2 | Hash-based + fuzzy title match |
+| ID | Feature | Priority | Notes | Impl | Test | Git |
+|----|---------|----------|-------|------|------|-----|
+| F1.1 | Scan local directories for media files | P0 | Recursive, configurable paths | ✅ | ✅ | ✅ |
+| F1.2 | Incremental scan (detect new/changed/deleted files only) | P0 | Do not re-scan entire library | ⬜ | ⬜ | ⬜ |
+| F1.3 | Real-time file watching (inotify / FSEvents / ReadDirectoryChanges) | P1 | Detect additions without manual trigger | ⬜ | ⬜ | ⬜ |
+| F1.4 | Organize by Movies / TV Shows / Music | P0 | Separate library views per media type | ✅ | ✅ | ✅ |
+| F1.5 | Multi-library support (e.g., separate "Kids" library) | P1 | Different directories → different libraries | ✅ | ✅ | ✅ |
+| F1.6 | Library size display (item count, total storage) | P1 | Dashboard stat | ⬜ | ⬜ | ⬜ |
+| F1.7 | Batch library operations (re-scan, re-match metadata) | P2 | Needed for large collections | ⬜ | ⬜ | ⬜ |
+| F1.8 | Duplicate detection | P2 | Hash-based + fuzzy title match | ⬜ | ⬜ | ⬜ |
 
 ---
 
@@ -287,20 +303,20 @@ The following must work with zero internet, no exceptions:
 
 > **Privacy note:** All F2 features that contact external services are gated behind F0 sub-settings. If the relevant F0 toggle is OFF, the feature silently skips the network call and uses local data or a placeholder. No error is shown to end users — only a note in the admin scan log.
 
-| ID | Feature | Priority | Internet Required | F0 Gate | Notes |
-|----|---------|----------|------------------|---------|-------|
-| F2.1 | Auto-match movies/shows to TMDB | P0 | Yes (first fetch) | F0.2.1 | Skipped silently if disabled; item shows without metadata |
-| F2.2 | IMDb as fallback metadata source | P1 | Yes (first fetch) | F0.2.1 (same toggle) | Secondary lookup when TMDB returns no match |
-| F2.3 | Download poster, backdrop, fanart, logo images | P0 | Yes (first fetch) | F0.2.2 | Placeholder shown if disabled; locally cached once downloaded |
-| F2.4 | Manual match override (user selects correct TMDB entry) | P0 | Yes (search) | F0.2.1 | Requires internet enabled at time of manual search |
-| F2.5 | Filename hints for disambiguation (`{tmdb-12345}`) | P1 | No | — | Pure local; ID baked into filename, no lookup needed |
-| F2.6 | Local NFO file support (Kodi-compatible metadata) | P0 | No | — | Fully offline; reads `.nfo` sidecar files |
-| F2.7 | Music metadata via MusicBrainz | P1 | Yes (first fetch) | F0.2.3 | Skipped if disabled |
-| F2.8 | Batch metadata re-match | P2 | Yes | F0.2.1 | Requires internet enabled; user-initiated only |
-| F2.9 | User-submitted metadata corrections | P3 | Optional | F0.2.9 | Community feature; offline editing always supported |
-| F2.10 | AI-assisted metadata fuzzy matching | P3 | Optional | TBD | Local model preferred if feasible |
-| F2.11 | Manual metadata entry (title, year, description, genre) | P0 | No | — | Full offline metadata editing for any item |
-| F2.12 | Manual artwork upload (user provides poster/backdrop image) | P0 | No | — | Upload local image file; stored in `data/artwork/` |
+| ID | Feature | Priority | Internet Required | F0 Gate | Notes | Impl | Test | Git |
+|----|---------|----------|------------------|---------|-------|------|------|-----|
+| F2.1 | Auto-match movies/shows to TMDB | P0 | Yes (first fetch) | F0.2.1 | Skipped silently if disabled; item shows without metadata | ⬜ | ⬜ | ⬜ |
+| F2.2 | IMDb as fallback metadata source | P1 | Yes (first fetch) | F0.2.1 (same toggle) | Secondary lookup when TMDB returns no match | ⬜ | ⬜ | ⬜ |
+| F2.3 | Download poster, backdrop, fanart, logo images | P0 | Yes (first fetch) | F0.2.2 | Placeholder shown if disabled; locally cached once downloaded | ⬜ | ⬜ | ⬜ |
+| F2.4 | Manual match override (user selects correct TMDB entry) | P0 | Yes (search) | F0.2.1 | Requires internet enabled at time of manual search | ⬜ | ⬜ | ⬜ |
+| F2.5 | Filename hints for disambiguation (`{tmdb-12345}`) | P1 | No | — | Pure local; ID baked into filename, no lookup needed | ⬜ | ⬜ | ⬜ |
+| F2.6 | Local NFO file support (Kodi-compatible metadata) | P0 | No | — | Fully offline; reads `.nfo` sidecar files | ⬜ | ⬜ | ⬜ |
+| F2.7 | Music metadata via MusicBrainz | P1 | Yes (first fetch) | F0.2.3 | Skipped if disabled | ⬜ | ⬜ | ⬜ |
+| F2.8 | Batch metadata re-match | P2 | Yes | F0.2.1 | Requires internet enabled; user-initiated only | ⬜ | ⬜ | ⬜ |
+| F2.9 | User-submitted metadata corrections | P3 | Optional | F0.2.9 | Community feature; offline editing always supported | ⬜ | ⬜ | ⬜ |
+| F2.10 | AI-assisted metadata fuzzy matching | P3 | Optional | TBD | Local model preferred if feasible | ⬜ | ⬜ | ⬜ |
+| F2.11 | Manual metadata entry (title, year, description, genre) | P0 | No | — | Full offline metadata editing for any item | ⬜ | ⬜ | ⬜ |
+| F2.12 | Manual artwork upload (user provides poster/backdrop image) | P0 | No | — | Upload local image file; stored in `data/artwork/` | ⬜ | ⬜ | ⬜ |
 
 ---
 
@@ -308,25 +324,25 @@ The following must work with zero internet, no exceptions:
 
 > All F3 features are fully offline. No internet connection required for any playback feature.
 
-| ID | Feature | Priority | Notes |
-|----|---------|----------|-------|
-| F3.1 | Direct play (no transcoding) when client supports format | P0 | Highest priority — zero CPU, lowest latency |
-| F3.2 | Software transcoding via FFmpeg | P0 | Fallback when direct play not possible |
-| F3.3 | Hardware-accelerated transcoding (NVIDIA NVENC) | P0 | Essential for performance |
-| F3.4 | Hardware transcoding: Intel QSV | P1 | NAS/integrated graphics support |
-| F3.5 | Hardware transcoding: AMD AMF | P1 | AMD GPU support |
-| F3.6 | Hardware transcoding: VA-API (Linux) | P1 | Open-source HW accel |
-| F3.7 | HLS adaptive bitrate streaming | P0 | Standard for web/TV clients |
-| F3.8 | Bitrate selection (auto + manual) | P1 | User can override quality |
-| F3.9 | External subtitle support (.srt, .ass, .vtt) | P0 | Embedded + sidecar files |
-| F3.10 | Subtitle burn-in for incompatible clients | P1 | Hardware-accelerated via FFmpeg |
-| F3.11 | Resume playback from last position | P0 | Per-user, cross-device |
-| F3.12 | Multiple audio track selection | P0 | Per-stream |
-| F3.13 | Multiple subtitle track selection | P0 | Per-stream |
-| F3.14 | Playback speed control | P1 | 0.5x–2x |
-| F3.15 | Chapter navigation (for video files with chapters) | P1 | Seek to chapter |
-| F3.16 | Skip intro / skip credits detection | P2 | Local analysis only — no crowd-sourced fingerprint service |
-| F3.17 | HDR tone-mapping (HDR → SDR for non-HDR displays) | P2 | FFmpeg tone-map filter |
+| ID | Feature | Priority | Notes | Impl | Test | Git |
+|----|---------|----------|-------|------|------|-----|
+| F3.1 | Direct play (no transcoding) when client supports format | P0 | Highest priority — zero CPU, lowest latency | ✅ | ✅ | ✅ |
+| F3.2 | Software transcoding via FFmpeg | P0 | Fallback when direct play not possible | ✅ | ⬜ | ✅ |
+| F3.3 | Hardware-accelerated transcoding (NVIDIA NVENC) | P0 | Essential for performance | ✅ | ⬜ | ✅ |
+| F3.4 | Hardware transcoding: Intel QSV | P1 | NAS/integrated graphics support | ✅ | ⬜ | ✅ |
+| F3.5 | Hardware transcoding: AMD AMF | P1 | AMD GPU support | ✅ | ⬜ | ✅ |
+| F3.6 | Hardware transcoding: VA-API (Linux) | P1 | Open-source HW accel | ⬜ | ⬜ | ⬜ |
+| F3.7 | HLS adaptive bitrate streaming | P0 | Standard for web/TV clients | ✅ | ⬜ | ✅ |
+| F3.8 | Bitrate selection (auto + manual) | P1 | User can override quality | ⬜ | ⬜ | ⬜ |
+| F3.9 | External subtitle support (.srt, .ass, .vtt) | P0 | Embedded + sidecar files | ⬜ | ⬜ | ⬜ |
+| F3.10 | Subtitle burn-in for incompatible clients | P1 | Hardware-accelerated via FFmpeg | ⬜ | ⬜ | ⬜ |
+| F3.11 | Resume playback from last position | P0 | Per-user, cross-device | 🔄 | ⬜ | ✅ |
+| F3.12 | Multiple audio track selection | P0 | Per-stream | ⬜ | ⬜ | ⬜ |
+| F3.13 | Multiple subtitle track selection | P0 | Per-stream | ⬜ | ⬜ | ⬜ |
+| F3.14 | Playback speed control | P1 | 0.5x–2x | ⬜ | ⬜ | ⬜ |
+| F3.15 | Chapter navigation (for video files with chapters) | P1 | Seek to chapter | ⬜ | ⬜ | ⬜ |
+| F3.16 | Skip intro / skip credits detection | P2 | Local analysis only — no crowd-sourced fingerprint service | ⬜ | ⬜ | ⬜ |
+| F3.17 | HDR tone-mapping (HDR → SDR for non-HDR displays) | P2 | FFmpeg tone-map filter | ⬜ | ⬜ | ⬜ |
 
 ---
 
@@ -334,30 +350,30 @@ The following must work with zero internet, no exceptions:
 
 > All F4 UI features are fully offline. The web UI is served by the local server — no CDN, no external font, no external analytics script, no tracking pixel.
 
-| ID | Feature | Priority | Notes |
-|----|---------|----------|-------|
-| F4.1 | Dashboard (recently added, continue watching, recommended) | P0 | Home screen |
-| F4.2 | Library grid view (posters) | P0 | Standard media browser |
-| F4.3 | Library list view | P1 | Alternative view mode |
-| F4.4 | Search (title, actor, genre, year) | P0 | Instant search, no page refresh |
-| F4.5 | Filter & sort (genre, year, rating, resolution, language) | P1 | Faceted filtering |
-| F4.6 | Movie detail page (metadata, cast, streams, related) | P0 | Rich detail view |
-| F4.7 | TV show detail page (seasons, episodes, progress) | P0 | Episode grid with watch status |
-| F4.8 | Music artist / album / track views | P0 | Standard music library UI |
-| F4.9 | Built-in video player | P0 | HLS.js or native video element |
-| F4.10 | Built-in audio player | P0 | With queue management |
-| F4.11 | Mobile-responsive design | P0 | Works on phone browser |
-| F4.12 | Dark theme (default) | P0 | Standard for media apps |
-| F4.13 | Light theme | P2 | Optional toggle |
-| F4.14 | Watch history per user | P1 | "Watched" badge, progress rings |
-| F4.15 | Favorites / watchlist | P1 | User-curated lists |
-| F4.16 | Admin panel (users, libraries, tasks, logs) | P0 | Server management UI |
-| F4.17 | Server dashboard (CPU, memory, transcode sessions, storage) | P1 | Real-time stats |
-| F4.18 | Keyboard shortcuts for player | P1 | Space=play/pause, arrow keys=seek |
-| F4.19 | Chromecast / AirPlay support | P2 | Browser cast integration — local network only, no Google/Apple cloud relay |
-| F4.20 | No external resources loaded by web UI | P0 | All fonts, icons, and scripts embedded in the single binary. No calls to Google Fonts, CDNs, or analytics from the browser. |
-| F4.21 | Privacy & Internet settings page (admin) | P0 | Implements F0.3 UI requirements |
-| F4.22 | Network activity log viewer (admin) | P1 | Implements F0.1.5 — readable log of all outbound requests |
+| ID | Feature | Priority | Notes | Impl | Test | Git |
+|----|---------|----------|-------|------|------|-----|
+| F4.1 | Dashboard (recently added, continue watching, recommended) | P0 | Home screen | ✅ | ✅ | ✅ |
+| F4.2 | Library grid view (posters) | P0 | Standard media browser | ✅ | ✅ | ✅ |
+| F4.3 | Library list view | P1 | Alternative view mode | ⬜ | ⬜ | ⬜ |
+| F4.4 | Search (title, actor, genre, year) | P0 | Instant search, no page refresh | ⬜ | ⬜ | ⬜ |
+| F4.5 | Filter & sort (genre, year, rating, resolution, language) | P1 | Faceted filtering | ⬜ | ⬜ | ⬜ |
+| F4.6 | Movie detail page (metadata, cast, streams, related) | P0 | Rich detail view | ✅ | ✅ | ✅ |
+| F4.7 | TV show detail page (seasons, episodes, progress) | P0 | Episode grid with watch status | ⬜ | ⬜ | ⬜ |
+| F4.8 | Music artist / album / track views | P0 | Standard music library UI | ⬜ | ⬜ | ⬜ |
+| F4.9 | Built-in video player | P0 | HLS.js or native video element | ✅ | ✅ | ✅ |
+| F4.10 | Built-in audio player | P0 | With queue management | ⬜ | ⬜ | ⬜ |
+| F4.11 | Mobile-responsive design | P0 | Works on phone browser | 🔄 | ⬜ | ✅ |
+| F4.12 | Dark theme (default) | P0 | Standard for media apps | ✅ | ✅ | ✅ |
+| F4.13 | Light theme | P2 | Optional toggle | ⬜ | ⬜ | ⬜ |
+| F4.14 | Watch history per user | P1 | "Watched" badge, progress rings | ⬜ | ⬜ | ⬜ |
+| F4.15 | Favorites / watchlist | P1 | User-curated lists | ⬜ | ⬜ | ⬜ |
+| F4.16 | Admin panel (users, libraries, tasks, logs) | P0 | Server management UI | ✅ | ✅ | ✅ |
+| F4.17 | Server dashboard (CPU, memory, transcode sessions, storage) | P1 | Real-time stats | 🔄 | ⬜ | ✅ |
+| F4.18 | Keyboard shortcuts for player | P1 | Space=play/pause, arrow keys=seek | ⬜ | ⬜ | ⬜ |
+| F4.19 | Chromecast / AirPlay support | P2 | Browser cast integration — local network only, no Google/Apple cloud relay | ⬜ | ⬜ | ⬜ |
+| F4.20 | No external resources loaded by web UI | P0 | All fonts, icons, and scripts embedded in the single binary. No calls to Google Fonts, CDNs, or analytics from the browser. | ✅ | ✅ | ✅ |
+| F4.21 | Privacy & Internet settings page (admin) | P0 | Implements F0.3 UI requirements | 🔄 | ⬜ | ✅ |
+| F4.22 | Network activity log viewer (admin) | P1 | Implements F0.1.5 — readable log of all outbound requests | ⬜ | ⬜ | ⬜ |
 
 ---
 
@@ -365,33 +381,33 @@ The following must work with zero internet, no exceptions:
 
 > All authentication is local. No external identity provider is contacted unless explicitly configured by the admin.
 
-| ID | Feature | Priority | Notes |
-|----|---------|----------|-------|
-| F5.1 | Local username/password accounts | P0 | Built-in auth — no external service |
-| F5.2 | Admin role vs. standard user role | P0 | Access control |
-| F5.3 | Per-library access controls | P0 | Admin assigns which libraries a user sees |
-| F5.4 | PIN-based parental controls | P1 | Restrict content rating per user |
-| F5.5 | Invite link system (admin creates invite, user registers) | P1 | No self-registration by default |
-| F5.6 | OAuth 2.0 / OIDC integration (optional) | P2 | When enabled, contacts Google/GitHub. Clearly labeled in F0 settings with data disclosure. |
-| F5.7 | LDAP/Active Directory integration (optional) | P2 | Contacts LDAP server (local or remote). Labeled in F0 settings. |
-| F5.8 | Session management (list active sessions, revoke) | P1 | Admin visibility |
-| F5.9 | API token support | P1 | For third-party clients |
-| F5.10 | Two-factor authentication (TOTP) | P2 | Local TOTP — no SMS, no cloud auth service |
+| ID | Feature | Priority | Notes | Impl | Test | Git |
+|----|---------|----------|-------|------|------|-----|
+| F5.1 | Local username/password accounts | P0 | Built-in auth — no external service | ✅ | ✅ | ✅ |
+| F5.2 | Admin role vs. standard user role | P0 | Access control | ✅ | ✅ | ✅ |
+| F5.3 | Per-library access controls | P0 | Admin assigns which libraries a user sees | ⬜ | ⬜ | ⬜ |
+| F5.4 | PIN-based parental controls | P1 | Restrict content rating per user | ⬜ | ⬜ | ⬜ |
+| F5.5 | Invite link system (admin creates invite, user registers) | P1 | No self-registration by default | ⬜ | ⬜ | ⬜ |
+| F5.6 | OAuth 2.0 / OIDC integration (optional) | P2 | When enabled, contacts Google/GitHub. Clearly labeled in F0 settings with data disclosure. | ⬜ | ⬜ | ⬜ |
+| F5.7 | LDAP/Active Directory integration (optional) | P2 | Contacts LDAP server (local or remote). Labeled in F0 settings. | ⬜ | ⬜ | ⬜ |
+| F5.8 | Session management (list active sessions, revoke) | P1 | Admin visibility | ⬜ | ⬜ | ⬜ |
+| F5.9 | API token support | P1 | For third-party clients | ⬜ | ⬜ | ⬜ |
+| F5.10 | Two-factor authentication (TOTP) | P2 | Local TOTP — no SMS, no cloud auth service | ⬜ | ⬜ | ⬜ |
 
 ---
 
 ### F6 — Remote Access
 
-| ID | Feature | Priority | Notes |
-|----|---------|----------|-------|
-| F6.1 | Works on local network without any cloud dependency | P0 | Core requirement |
-| F6.2 | HTTPS support (user-provided cert or self-signed) | P0 | Let's Encrypt option available but requires internet — optional, labeled in F0 |
-| F6.3 | Reverse proxy documentation (nginx, Caddy, Traefik) | P0 | Guide for remote access setup |
-| F6.4 | Base URL path prefix support (`/streamvault`) | P1 | For multi-app reverse proxy |
-| F6.5 | Bandwidth throttle per user (remote streams) | P1 | Prevent crushing home upload bandwidth |
-| F6.6 | Tailscale integration guidance | P1 | Zero-config VPN option — Tailscale itself contacts the internet but StreamVault does not relay any data |
-| F6.7 | Built-in optional relay (self-hosted relay server) | P3 | For users who can't port-forward |
-| F6.8 | Let's Encrypt automatic cert issuance | P1 | Internet required; gated behind F0 sub-setting "Let's Encrypt Certificate Renewal" — data sent: domain name to letsencrypt.org |
+| ID | Feature | Priority | Notes | Impl | Test | Git |
+|----|---------|----------|-------|------|------|-----|
+| F6.1 | Works on local network without any cloud dependency | P0 | Core requirement | ✅ | ✅ | ✅ |
+| F6.2 | HTTPS support (user-provided cert or self-signed) | P0 | Let's Encrypt option available but requires internet — optional, labeled in F0 | ⬜ | ⬜ | ⬜ |
+| F6.3 | Reverse proxy documentation (nginx, Caddy, Traefik) | P0 | Guide for remote access setup | ⬜ | ⬜ | ⬜ |
+| F6.4 | Base URL path prefix support (`/streamvault`) | P1 | For multi-app reverse proxy | ⬜ | ⬜ | ⬜ |
+| F6.5 | Bandwidth throttle per user (remote streams) | P1 | Prevent crushing home upload bandwidth | ⬜ | ⬜ | ⬜ |
+| F6.6 | Tailscale integration guidance | P1 | Zero-config VPN option — Tailscale itself contacts the internet but StreamVault does not relay any data | ⬜ | ⬜ | ⬜ |
+| F6.7 | Built-in optional relay (self-hosted relay server) | P3 | For users who can't port-forward | ⬜ | ⬜ | ⬜ |
+| F6.8 | Let's Encrypt automatic cert issuance | P1 | Internet required; gated behind F0 sub-setting "Let's Encrypt Certificate Renewal" — data sent: domain name to letsencrypt.org | ⬜ | ⬜ | ⬜ |
 
 ---
 
@@ -399,32 +415,32 @@ The following must work with zero internet, no exceptions:
 
 #### F7 — Watch Together (SyncPlay)
 
-| ID | Feature | Priority | Internet Required | Notes |
-|----|---------|----------|------------------|-------|
-| F7.1 | Create watch party session (host + guests) | P2 | No — LAN only | WebSocket-based sync, local network |
-| F7.2 | Sync play/pause/seek across all participants | P2 | No | Sub-second sync |
-| F7.3 | Text chat during watch party | P2 | No | Sidebar chat, local only |
-| F7.4 | Guest access (no account required for watch parties) | P3 | No | Link-based temp access |
+| ID | Feature | Priority | Internet Required | Notes | Impl | Test | Git |
+|----|---------|----------|------------------|-------|------|------|-----|
+| F7.1 | Create watch party session (host + guests) | P2 | No — LAN only | WebSocket-based sync, local network | ⬜ | ⬜ | ⬜ |
+| F7.2 | Sync play/pause/seek across all participants | P2 | No | Sub-second sync | ⬜ | ⬜ | ⬜ |
+| F7.3 | Text chat during watch party | P2 | No | Sidebar chat, local only | ⬜ | ⬜ | ⬜ |
+| F7.4 | Guest access (no account required for watch parties) | P3 | No | Link-based temp access | ⬜ | ⬜ | ⬜ |
 
 #### F8 — Smart Recommendations
 
-| ID | Feature | Priority | Internet Required | Notes |
-|----|---------|----------|------------------|-------|
-| F8.1 | "More like this" (genre/tag-based similarity) | P2 | No | Computed from local metadata |
-| F8.2 | Watch history-based recommendations | P2 | No | Local collaborative filtering |
-| F8.3 | "New episodes" / "new additions" notifications | P2 | No | In-app, local event |
-| F8.4 | AI-powered discovery (natural language: "show me 80s sci-fi") | P3 | Optional | Local model preferred; if cloud LLM used, gated behind F0 with full data disclosure |
+| ID | Feature | Priority | Internet Required | Notes | Impl | Test | Git |
+|----|---------|----------|------------------|-------|------|------|-----|
+| F8.1 | "More like this" (genre/tag-based similarity) | P2 | No | Computed from local metadata | ⬜ | ⬜ | ⬜ |
+| F8.2 | Watch history-based recommendations | P2 | No | Local collaborative filtering | ⬜ | ⬜ | ⬜ |
+| F8.3 | "New episodes" / "new additions" notifications | P2 | No | In-app, local event | ⬜ | ⬜ | ⬜ |
+| F8.4 | AI-powered discovery (natural language: "show me 80s sci-fi") | P3 | Optional | Local model preferred; if cloud LLM used, gated behind F0 with full data disclosure | ⬜ | ⬜ | ⬜ |
 
 #### F9 — Plugin System
 
-| ID | Feature | Priority | Internet Required | Notes |
-|----|---------|----------|------------------|-------|
-| F9.1 | Plugin SDK (Go interface-based) | P2 | No | Typed contracts for plugins |
-| F9.2 | Metadata provider plugins | P2 | Plugin-dependent | Each plugin declares its internet requirements; displayed in F0 sub-settings when installed |
-| F9.3 | Authentication provider plugins | P2 | Plugin-dependent | Same disclosure requirement |
-| F9.4 | Scheduled task plugins | P2 | No | Custom automation |
-| F9.5 | Plugin repository (curated community list) | P3 | Yes (browse) | Browsing the plugin catalog requires internet; installing and running a plugin does not unless the plugin itself requires it |
-| F9.6 | Plugin internet declaration manifest | P2 | — | Every plugin must declare: `internet_required: true/false`, `external_hosts: [...]`, `data_sent: "..."` in its manifest. Displayed in the F0 settings when plugin is installed. |
+| ID | Feature | Priority | Internet Required | Notes | Impl | Test | Git |
+|----|---------|----------|------------------|-------|------|------|-----|
+| F9.1 | Plugin SDK (Go interface-based) | P2 | No | Typed contracts for plugins | ⬜ | ⬜ | ⬜ |
+| F9.2 | Metadata provider plugins | P2 | Plugin-dependent | Each plugin declares its internet requirements; displayed in F0 sub-settings when installed | ⬜ | ⬜ | ⬜ |
+| F9.3 | Authentication provider plugins | P2 | Plugin-dependent | Same disclosure requirement | ⬜ | ⬜ | ⬜ |
+| F9.4 | Scheduled task plugins | P2 | No | Custom automation | ⬜ | ⬜ | ⬜ |
+| F9.5 | Plugin repository (curated community list) | P3 | Yes (browse) | Browsing the plugin catalog requires internet; installing and running a plugin does not unless the plugin itself requires it | ⬜ | ⬜ | ⬜ |
+| F9.6 | Plugin internet declaration manifest | P2 | — | Every plugin must declare: `internet_required: true/false`, `external_hosts: [...]`, `data_sent: "..."` in its manifest. Displayed in the F0 settings when plugin is installed. | ⬜ | ⬜ | ⬜ |
 
 ---
 
@@ -432,24 +448,24 @@ The following must work with zero internet, no exceptions:
 
 #### F10 — TV & Mobile Clients
 
-| ID | Feature | Priority | Notes |
-|----|---------|----------|-------|
-| F10.1 | AndroidTV / FireTV client app | P3 | Native or React Native |
-| F10.2 | Apple TV (tvOS) client app | P3 | Native Swift |
-| F10.3 | Roku client app | P3 | BrightScript |
-| F10.4 | Samsung Tizen app | P3 | Or use web client |
-| F10.5 | iOS native app | P3 | Swift / React Native |
-| F10.6 | Android native app | P3 | Kotlin / React Native |
-| F10.7 | Open client SDK (TypeScript) | P3 | For third-party developers |
+| ID | Feature | Priority | Notes | Impl | Test | Git |
+|----|---------|----------|-------|------|------|-----|
+| F10.1 | AndroidTV / FireTV client app | P3 | Native or React Native | ⬜ | ⬜ | ⬜ |
+| F10.2 | Apple TV (tvOS) client app | P3 | Native Swift | ⬜ | ⬜ | ⬜ |
+| F10.3 | Roku client app | P3 | BrightScript | ⬜ | ⬜ | ⬜ |
+| F10.4 | Samsung Tizen app | P3 | Or use web client | ⬜ | ⬜ | ⬜ |
+| F10.5 | iOS native app | P3 | Swift / React Native | ⬜ | ⬜ | ⬜ |
+| F10.6 | Android native app | P3 | Kotlin / React Native | ⬜ | ⬜ | ⬜ |
+| F10.7 | Open client SDK (TypeScript) | P3 | For third-party developers | ⬜ | ⬜ | ⬜ |
 
 #### F11 — Advanced Library Tools
 
-| ID | Feature | Priority | Notes |
-|----|---------|----------|-------|
-| F11.1 | Duplicate file detection & merge UI | P3 | Across all media types |
-| F11.2 | Media health check (corrupted files, missing metadata) | P3 | Library audit tool |
-| F11.3 | Storage analytics (largest files, codec breakdown) | P3 | Dashboard view |
-| F11.4 | Automated file organization (rename/move by convention) | P3 | Optional, with preview |
+| ID | Feature | Priority | Notes | Impl | Test | Git |
+|----|---------|----------|-------|------|------|-----|
+| F11.1 | Duplicate file detection & merge UI | P3 | Across all media types | ⬜ | ⬜ | ⬜ |
+| F11.2 | Media health check (corrupted files, missing metadata) | P3 | Library audit tool | ⬜ | ⬜ | ⬜ |
+| F11.3 | Storage analytics (largest files, codec breakdown) | P3 | Dashboard view | ⬜ | ⬜ | ⬜ |
+| F11.4 | Automated file organization (rename/move by convention) | P3 | Optional, with preview | ⬜ | ⬜ | ⬜ |
 
 ---
 
