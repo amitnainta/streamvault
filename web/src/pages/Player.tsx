@@ -33,9 +33,10 @@ export default function PlayerPage() {
 
   const progressMutation = useMutation({
     mutationFn: (posMs: number) =>
-      api.patch(`/users/${user?.id}/progress/${id}`, {
+      api.put(`/progress/${id}`, {
         position_ms: posMs,
-        played_pct: duration > 0 ? posMs / (duration * 1000) : 0,
+        duration_ms: duration * 1000,
+        completed: duration > 0 && posMs / (duration * 1000) > 0.9,
       }),
   })
 
@@ -44,15 +45,16 @@ export default function PlayerPage() {
     if (!playback || !videoRef.current) return
     const video = videoRef.current
 
-    if (playback.direct_play) {
-      video.src = playback.stream_url
+    if (playback.type === 'direct') {
+      video.src = playback.url
     } else if (Hls.isSupported()) {
-      const hls = new Hls()
-      hls.loadSource(playback.stream_url)
+      const token = useAuthStore.getState().accessToken
+      const hls = new Hls({ xhrSetup: (xhr) => xhr.setRequestHeader('Authorization', `Bearer ${token}`) })
+      hls.loadSource(playback.url)
       hls.attachMedia(video)
       hlsRef.current = hls
     } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
-      video.src = playback.stream_url // Safari native HLS
+      video.src = playback.url // Safari native HLS
     }
 
     return () => {

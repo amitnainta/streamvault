@@ -64,10 +64,8 @@ export interface MediaItem {
 }
 
 export interface PlaybackInfo {
-  stream_url: string
-  direct_play: boolean
-  video_codec: string
-  audio_codec: string
+  type: 'hls' | 'direct'
+  url: string
   session_id?: string
 }
 

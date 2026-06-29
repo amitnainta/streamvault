@@ -93,7 +93,7 @@ export default function Sidebar() {
           </div>
           <button
             onClick={() => { logout(); navigate('/login') }}
-            className="text-muted-foreground hover:text-foreground transition-colors"
+            className="text-muted-foreground hover:text-red-400 transition-colors p-1 rounded"
             title="Sign out"
           >
             <LogOut size={16} />

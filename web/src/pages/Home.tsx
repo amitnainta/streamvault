@@ -15,8 +15,8 @@ export default function HomePage() {
   })
 
   const { data: progress } = useQuery({
-    queryKey: ['progress', user?.id],
-    queryFn: () => api.get<PlaybackProgress[]>(`/users/${user?.id}/progress?in_progress=true`),
+    queryKey: ['continue-watching'],
+    queryFn: () => api.get<PlaybackProgress[]>('/progress/continue-watching'),
     enabled: !!user?.id,
   })
 
