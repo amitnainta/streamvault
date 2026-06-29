@@ -1,6 +1,6 @@
 import { NavLink, useNavigate } from 'react-router-dom'
 import {
-  Home, Film, Tv, Music, Settings, Shield,
+  Home, Film, Tv, Music, Shield,
   Library, Users, LogOut, Server
 } from 'lucide-react'
 import { useAuthStore } from '@/store/authStore'

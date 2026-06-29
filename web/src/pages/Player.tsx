@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation } from '@tanstack/react-query'
 import Hls from 'hls.js'
-import { ArrowLeft, Play, Pause, Volume2, VolumeX, Maximize, Settings } from 'lucide-react'
+import { ArrowLeft, Play, Pause, Volume2, VolumeX, Maximize } from 'lucide-react'
 import { api } from '@/api/client'
 import { useAuthStore } from '@/store/authStore'
 import type { MediaItem, PlaybackInfo } from '@/types/api'
@@ -10,7 +10,7 @@ import type { MediaItem, PlaybackInfo } from '@/types/api'
 export default function PlayerPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
-  const { user } = useAuthStore()
+  useAuthStore()
   const videoRef = useRef<HTMLVideoElement>(null)
   const hlsRef = useRef<Hls | null>(null)
 

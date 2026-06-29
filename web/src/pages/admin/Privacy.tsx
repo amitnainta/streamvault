@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '@/api/client'
-import { Shield, Globe, GlobeLock, ExternalLink, Clock, CheckCircle2, XCircle } from 'lucide-react'
+import { Shield, Globe, GlobeLock, Clock, CheckCircle2, XCircle } from 'lucide-react'
 import type { PrivacySettings, ActivityEntry } from '@/types/api'
 
 // ── Feature definitions ──────────────────────────────────────────────────────
