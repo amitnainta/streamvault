@@ -1,11 +1,20 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation } from '@tanstack/react-query'
 import Hls from 'hls.js'
-import { ArrowLeft, Play, Pause, Volume2, VolumeX, Maximize } from 'lucide-react'
+import { ArrowLeft, Play, Pause, Volume2, VolumeX, Maximize, Settings } from 'lucide-react'
 import { api } from '@/api/client'
 import { useAuthStore } from '@/store/authStore'
 import type { MediaItem, PlaybackInfo } from '@/types/api'
+
+type Quality = 'auto' | 'high' | 'medium' | 'low'
+
+const QUALITY_LABELS: Record<Quality, string> = {
+  auto:   'Auto (Direct)',
+  high:   'High (8 Mbps)',
+  medium: 'Medium (4 Mbps)',
+  low:    'Low (2 Mbps)',
+}
 
 export default function PlayerPage() {
   const { id } = useParams<{ id: string }>()
@@ -18,6 +27,9 @@ export default function PlayerPage() {
   const [muted, setMuted] = useState(false)
   const [currentTime, setCurrentTime] = useState(0)
   const [duration, setDuration] = useState(0)
+  const [quality, setQuality] = useState<Quality>('auto')
+  const [showQuality, setShowQuality] = useState(false)
+  const savedTimeRef = useRef(0)
 
   const { data: item } = useQuery({
     queryKey: ['item', id],
@@ -25,9 +37,9 @@ export default function PlayerPage() {
     enabled: !!id,
   })
 
-  const { data: playback } = useQuery({
-    queryKey: ['playback', id],
-    queryFn: () => api.get<PlaybackInfo>(`/items/${id}/playback`),
+  const { data: playback, refetch: refetchPlayback } = useQuery({
+    queryKey: ['playback', id, quality],
+    queryFn: () => api.get<PlaybackInfo>(`/items/${id}/playback?quality=${quality}`),
     enabled: !!id,
   })
 
@@ -40,12 +52,23 @@ export default function PlayerPage() {
       }),
   })
 
+  const stopHls = useCallback(() => {
+    hlsRef.current?.destroy()
+    hlsRef.current = null
+  }, [])
+
   // Set up HLS or direct play
   useEffect(() => {
     if (!playback || !videoRef.current) return
     const video = videoRef.current
+    const resumeAt = savedTimeRef.current
 
-    const tryPlay = () => video.play().catch(() => {/* blocked by autoplay policy — user clicks manually */})
+    stopHls()
+
+    const tryPlay = () => {
+      if (resumeAt > 0) video.currentTime = resumeAt
+      video.play().catch(() => {})
+    }
 
     if (playback.type === 'direct') {
       video.src = playback.url
@@ -63,11 +86,8 @@ export default function PlayerPage() {
       video.addEventListener('canplay', tryPlay, { once: true })
     }
 
-    return () => {
-      hlsRef.current?.destroy()
-      hlsRef.current = null
-    }
-  }, [playback])
+    return () => stopHls()
+  }, [playback, stopHls])
 
   // Save progress every 10 seconds
   useEffect(() => {
@@ -78,6 +98,18 @@ export default function PlayerPage() {
     }, 10_000)
     return () => clearInterval(interval)
   }, [playing])
+
+  const changeQuality = (q: Quality) => {
+    // Save current position so new stream resumes from same point
+    savedTimeRef.current = videoRef.current?.currentTime ?? 0
+    setShowQuality(false)
+    setQuality(q)
+    // Stop current HLS session before refetch starts a new one
+    if (playback?.type === 'hls' && playback.session_id) {
+      api.delete(`/stream/hls/${playback.session_id}`).catch(() => {})
+    }
+    refetchPlayback()
+  }
 
   const togglePlay = () => {
     if (!videoRef.current) return
@@ -100,7 +132,7 @@ export default function PlayerPage() {
   }
 
   return (
-    <div className="fixed inset-0 bg-black flex flex-col">
+    <div className="fixed inset-0 bg-black flex flex-col" onClick={() => setShowQuality(false)}>
       {/* Video */}
       <video
         ref={videoRef}
@@ -109,11 +141,11 @@ export default function PlayerPage() {
         onPause={() => setPlaying(false)}
         onTimeUpdate={() => setCurrentTime(videoRef.current?.currentTime ?? 0)}
         onLoadedMetadata={() => setDuration(videoRef.current?.duration ?? 0)}
-        onClick={togglePlay}
+        onClick={(e) => { e.stopPropagation(); togglePlay() }}
       />
 
       {/* Controls overlay */}
-      <div className={`absolute inset-0 flex flex-col justify-between p-4 bg-gradient-to-b from-black/60 via-transparent to-black/80 transition-opacity ${playing ? 'opacity-0 hover:opacity-100' : 'opacity-100'}`}>
+      <div className={`absolute inset-0 flex flex-col justify-between p-4 bg-gradient-to-b from-black/60 via-transparent to-black/80 transition-opacity ${playing && !showQuality ? 'opacity-0 hover:opacity-100' : 'opacity-100'}`}>
         {/* Top bar */}
         <div className="flex items-center gap-3">
           <button onClick={() => navigate(-1)} className="text-white hover:text-white/80">
@@ -138,14 +170,46 @@ export default function PlayerPage() {
               <button onClick={togglePlay} className="text-white hover:text-white/80">
                 {playing ? <Pause size={20} fill="white" /> : <Play size={20} fill="white" />}
               </button>
-              <button onClick={() => { setMuted(!muted); if (videoRef.current) videoRef.current.muted = !muted }} className="text-white hover:text-white/80">
+              <button
+                onClick={() => { setMuted(!muted); if (videoRef.current) videoRef.current.muted = !muted }}
+                className="text-white hover:text-white/80"
+              >
                 {muted ? <VolumeX size={18} /> : <Volume2 size={18} />}
               </button>
               <span className="text-white text-sm">{fmt(currentTime)} / {fmt(duration)}</span>
             </div>
-            <button onClick={() => videoRef.current?.requestFullscreen()} className="text-white hover:text-white/80">
-              <Maximize size={18} />
-            </button>
+
+            <div className="flex items-center gap-3">
+              {/* Quality selector */}
+              <div className="relative" onClick={(e) => e.stopPropagation()}>
+                <button
+                  onClick={() => setShowQuality(!showQuality)}
+                  className="flex items-center gap-1.5 text-white hover:text-white/80 text-xs font-medium"
+                  title="Quality"
+                >
+                  <Settings size={16} />
+                  <span className="hidden sm:inline">{QUALITY_LABELS[quality]}</span>
+                </button>
+                {showQuality && (
+                  <div className="absolute bottom-8 right-0 bg-black/90 border border-white/20 rounded-lg overflow-hidden min-w-[160px]">
+                    {(Object.keys(QUALITY_LABELS) as Quality[]).map((q) => (
+                      <button
+                        key={q}
+                        onClick={() => changeQuality(q)}
+                        className={`w-full text-left px-4 py-2 text-sm transition-colors
+                          ${quality === q ? 'text-accent bg-white/10' : 'text-white hover:bg-white/10'}`}
+                      >
+                        {QUALITY_LABELS[q]}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <button onClick={() => videoRef.current?.requestFullscreen()} className="text-white hover:text-white/80">
+                <Maximize size={18} />
+              </button>
+            </div>
           </div>
         </div>
       </div>

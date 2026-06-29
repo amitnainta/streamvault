@@ -145,13 +145,17 @@ func (e *Engine) cleanupLoop() {
 	}
 }
 
-// StartSessionSimple starts a session with default options (software transcode to H.264/AAC HLS).
-// Used by the stream handler when no client capability negotiation has occurred.
+// StartSession starts a session at the default 4 Mbps bitrate.
 func (e *Engine) StartSession(itemID, filePath string) (string, error) {
+	return e.StartSessionWithBitrate(itemID, filePath, "4000k")
+}
+
+// StartSessionWithBitrate starts an HLS transcode session at a specific video bitrate.
+func (e *Engine) StartSessionWithBitrate(itemID, filePath, videoBitrate string) (string, error) {
 	sess, err := e.StartSessionFull("", itemID, filePath, Options{
 		VideoCodec:   VideoEncoder(e.hwAccel, "h264"),
 		AudioCodec:   "aac",
-		VideoBitrate: "4000k",
+		VideoBitrate: videoBitrate,
 		AudioBitrate: "192k",
 	})
 	if err != nil {

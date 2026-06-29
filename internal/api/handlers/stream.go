@@ -24,11 +24,18 @@ func NewStreamHandler(db *sql.DB, engine *transcode.Engine, log *zap.Logger) *St
 	return &StreamHandler{db: db, engine: engine, log: log}
 }
 
+// qualityBitrate maps quality names to video bitrate strings.
+var qualityBitrate = map[string]string{
+	"high":   "8000k",
+	"medium": "4000k",
+	"low":    "2000k",
+}
+
 // StartSession picks between direct play and HLS transcode.
-// Direct play is used for formats the browser can play natively (mp4, webm, etc.).
-// HLS transcode is used for everything else (mkv, avi, etc.).
+// Accepts ?quality=auto|high|medium|low — non-auto values force HLS at the given bitrate.
 func (h *StreamHandler) StartSession(w http.ResponseWriter, r *http.Request) {
 	itemID := chi.URLParam(r, "id")
+	quality := r.URL.Query().Get("quality") // "", "auto", "high", "medium", "low"
 
 	var filePath string
 	var container sql.NullString
@@ -50,8 +57,8 @@ func (h *StreamHandler) StartSession(w http.ResponseWriter, r *http.Request) {
 		c = strings.TrimPrefix(strings.ToLower(filepath.Ext(filePath)), ".")
 	}
 
-	// Direct play: browser-native formats play without FFmpeg
-	if canDirectPlay(c) {
+	// Direct play when quality is auto (or unset) and format is browser-native
+	if (quality == "" || quality == "auto") && canDirectPlay(c) {
 		writeJSON(w, 200, map[string]string{
 			"type": "direct",
 			"url":  "/direct/" + itemID,
@@ -59,8 +66,13 @@ func (h *StreamHandler) StartSession(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// HLS transcode for everything else
-	sessionID, err := h.engine.StartSession(itemID, filePath)
+	// HLS transcode — use requested bitrate or default to 4 Mbps
+	bitrate, ok := qualityBitrate[quality]
+	if !ok {
+		bitrate = "4000k"
+	}
+
+	sessionID, err := h.engine.StartSessionWithBitrate(itemID, filePath, bitrate)
 	if err != nil {
 		h.log.Error("failed to start transcode session", zap.Error(err))
 		writeError(w, 500, "transcode error: "+err.Error())
