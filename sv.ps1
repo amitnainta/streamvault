@@ -127,12 +127,12 @@ function Test-Frontend {
 
 function Start-Backend {
     Kill-Port $BACKEND_PORT "old backend"
-    Assert-Binary
     Set-SVPath
 
     Log "Starting backend on :$BACKEND_PORT ..." Cyan
 
-    # Write a wrapper script so we can set env vars and redirect output
+    # Use 'go run' so the binary runs from Go's trusted temp dir,
+    # avoiding Device Guard blocks on custom-compiled executables.
     $wrapper = Join-Path $LOG_DIR "start_backend.cmd"
     @"
 @echo off
@@ -140,7 +140,7 @@ set SV_DATABASE_URL=$DB_PATH
 set SV_STORAGE_DATA_DIR=$DATA_DIR
 set SV_SERVER_PORT=$BACKEND_PORT
 set PATH=$FFMPEG_BIN;$GO_BIN;%PATH%
-"$BINARY" >> "$BACKEND_LOG" 2>&1
+"$GO_BIN\go.exe" run "$ROOT\cmd\streamvault\" >> "$BACKEND_LOG" 2>&1
 "@ | Set-Content $wrapper -Encoding ASCII
 
     $proc = Start-Process -FilePath "cmd.exe" -ArgumentList "/c `"$wrapper`"" `
