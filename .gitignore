@@ -26,6 +26,10 @@ node_modules/
 config.yaml
 config.toml
 
+# Runtime
+logs/
+*.exe~
+
 # OS
 .DS_Store
 Thumbs.db
