@@ -5,6 +5,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strconv"
+	"strings"
 
 	"go.uber.org/zap"
 )
@@ -34,6 +35,8 @@ type FFmpegRunner struct {
 func (f *FFmpegRunner) Start(job TranscodeJob, done <-chan struct{}) error {
 	args := f.buildArgs(job)
 	cmd := exec.Command("ffmpeg", args...)
+	stderr := &strings.Builder{}
+	cmd.Stderr = stderr
 
 	if err := cmd.Start(); err != nil {
 		return fmt.Errorf("ffmpeg start: %w", err)
@@ -48,7 +51,10 @@ func (f *FFmpegRunner) Start(job TranscodeJob, done <-chan struct{}) error {
 			cmd.Process.Kill()
 		case err := <-exitCh:
 			if err != nil {
-				f.logger.Warn("ffmpeg exited with error", zap.Error(err))
+				f.logger.Warn("ffmpeg exited with error",
+					zap.Error(err),
+					zap.String("stderr", stderr.String()),
+				)
 			}
 		}
 	}()
@@ -58,7 +64,7 @@ func (f *FFmpegRunner) Start(job TranscodeJob, done <-chan struct{}) error {
 
 func (f *FFmpegRunner) buildArgs(job TranscodeJob) []string {
 	args := []string{
-		"-hide_banner", "-loglevel", "error",
+		"-hide_banner", "-loglevel", "warning",
 		"-ss", strconv.FormatFloat(job.StartTimeSec, 'f', 3, 64),
 		"-i", job.InputPath,
 	}
