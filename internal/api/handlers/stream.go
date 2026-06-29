@@ -163,7 +163,8 @@ func (h *StreamHandler) StopSession(w http.ResponseWriter, r *http.Request) {
 // without any FFmpeg transcoding.
 func canDirectPlay(container string) bool {
 	switch container {
-	case "mp4", "m4v", "webm", "ogg",
+	case "mp4", "m4v", "mov",  // H.264 containers Chrome/Safari play natively
+		"webm", "ogg",
 		"mp3", "m4a", "flac", "wav", "aac", "opus":
 		return true
 	}
