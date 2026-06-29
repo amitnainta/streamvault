@@ -1,9 +1,10 @@
 # StreamVault — Product Requirements Document
 
-**Version:** 0.4
+**Version:** 0.5
 **Date:** 2026-06-28
 **Status:** Under Review
 **Changelog:**
+- v0.5 — F4.4 Search implemented and verified: FTS5 full-text index, debounced sidebar search bar, /search results page with type filter chips. Fixed Device Guard block via go run. Fixed FTS5 alias bug in MATCH query.
 - v0.4 — Playback verified end-to-end on both dev (:5180) and production (:8096). F3.1 direct play and F4.9 video player marked tested. .MOV (Canon camera) confirmed playing natively.
 - v0.3 — Added implementation tracking columns (Impl / Test / Git) to all feature tables. Status reflects MVP build session through 2026-06-28.
 - v0.2 — Added F0 (Offline-First & Privacy Controls) as P0 feature set. Promoted privacy to a first-class design pillar throughout. Every internet-connected feature now documented with: what data leaves the device, what external service receives it, and how to disable it. Metadata section updated to reflect offline-first fallback behavior.
@@ -355,7 +356,7 @@ The following must work with zero internet, no exceptions:
 | F4.1 | Dashboard (recently added, continue watching, recommended) | P0 | Home screen | ✅ | ✅ | ✅ |
 | F4.2 | Library grid view (posters) | P0 | Standard media browser | ✅ | ✅ | ✅ |
 | F4.3 | Library list view | P1 | Alternative view mode | ⬜ | ⬜ | ⬜ |
-| F4.4 | Search (title, actor, genre, year) | P0 | Instant search, no page refresh | ⬜ | ⬜ | ⬜ |
+| F4.4 | Search (title, actor, genre, year) | P0 | Instant search, no page refresh | ✅ | ✅ | ✅ |
 | F4.5 | Filter & sort (genre, year, rating, resolution, language) | P1 | Faceted filtering | ⬜ | ⬜ | ⬜ |
 | F4.6 | Movie detail page (metadata, cast, streams, related) | P0 | Rich detail view | ✅ | ✅ | ✅ |
 | F4.7 | TV show detail page (seasons, episodes, progress) | P0 | Episode grid with watch status | ⬜ | ⬜ | ⬜ |
